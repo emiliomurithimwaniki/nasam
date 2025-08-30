@@ -4,3 +4,7 @@ requests==2.32.3
 
 # Admin theme for a modern dashboard
 django-jazzmin==2.6.0
+
+# Production server and static files
+gunicorn==22.0.0
+whitenoise==6.7.0

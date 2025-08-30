@@ -8,12 +8,16 @@ SECRET_KEY = 'dev-secret-key-change-in-production'
 # Usage (PowerShell):  $env:DJANGO_DEBUG = 'False'
 # Defaults to True if not provided
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
-ALLOWED_HOSTS: list[str] = ['localhost', '127.0.0.1', 'a1ef3ee75902.ngrok-free.app']
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost',
-    'http://127.0.0.1',
-    'https://a1ef3ee75902.ngrok-free.app'
-]
+# Hosts and CSRF origins (configurable for Railway via env)
+# DJANGO_ALLOWED_HOSTS: space-separated list, e.g. "yourapp.up.railway.app example.com"
+ALLOWED_HOSTS: list[str] = os.getenv(
+    'DJANGO_ALLOWED_HOSTS', 'localhost 127.0.0.1'
+).split()
+
+# DJANGO_CSRF_TRUSTED_ORIGINS: space-separated, full origins e.g. "https://yourapp.up.railway.app https://example.com"
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost http://127.0.0.1'
+).split()
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -29,6 +33,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,6 +82,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# WhiteNoise compressed manifest storage for efficient static serving
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media (user uploads)
 MEDIA_URL = '/media/'
@@ -176,3 +183,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+
+# Behind proxy (Railway)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
