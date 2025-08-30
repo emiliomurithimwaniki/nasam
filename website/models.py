@@ -73,7 +73,7 @@ class Review(TimeStampedModel):
     name = models.CharField(max_length=120)
     rating = models.PositiveSmallIntegerField(default=5, help_text="1-5 stars")
     comment = models.TextField(blank=True)
-    is_approved = models.BooleanField(default=False, help_text="Only approved reviews are publicly visible")
+    is_approved = models.BooleanField(default=True, help_text="Only approved reviews are publicly visible")
 
     class Meta:
         ordering = ["-created"]

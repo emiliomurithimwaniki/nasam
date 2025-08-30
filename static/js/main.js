@@ -22,6 +22,145 @@
   els.forEach(e=>io.observe(e));
 })();
 
+// Collapse navbar when clicking outside or after selecting a link (mobile)
+(function(){
+  const nav = document.getElementById('nav'); // .navbar-collapse
+  const navbar = document.querySelector('.navbar');
+  const toggler = navbar ? navbar.querySelector('.navbar-toggler') : null;
+  if(!nav || !navbar) return;
+
+  const isOpen = ()=> nav.classList.contains('show');
+  const hide = ()=>{
+    // Use Bootstrap Collapse if present
+    const BS = window.bootstrap && window.bootstrap.Collapse;
+    if(BS){ BS.getOrCreateInstance(nav).hide(); }
+    else{
+      nav.classList.remove('show');
+    }
+    toggler && toggler.setAttribute('aria-expanded','false');
+  };
+
+  // Click outside closes
+  document.addEventListener('click', (e)=>{
+    if(!isOpen()) return;
+    const target = e.target;
+    // Ignore clicks inside navbar or on toggler
+    if(navbar.contains(target)) return;
+    hide();
+  });
+
+  // ESC to close (optional, helpful)
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && isOpen()) hide();
+  });
+
+  // After selecting a nav link on mobile, collapse
+  nav.querySelectorAll('.nav-link, .dropdown-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      // Only collapse if toggler is visible (mobile view)
+      const togglerVisible = toggler && window.getComputedStyle(toggler).display !== 'none';
+      if(togglerVisible) hide();
+    });
+  });
+})();
+
+// Image lightbox via Bootstrap modal
+(function(){
+  const init = ()=>{
+    const modalEl = document.getElementById('imageLightbox');
+    if(!modalEl) return;
+    const imgEl = modalEl.querySelector('#lightboxImg');
+    const capEl = modalEl.querySelector('#lightboxCaption');
+    let modal = null;
+
+    const open = (src, alt)=>{
+      if(!src) return;
+      imgEl.src = src;
+      imgEl.alt = alt || '';
+      if(capEl){ capEl.textContent = alt || ''; }
+      modal = window.bootstrap && window.bootstrap.Modal ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+      if(modal){
+        modal.show();
+      }else{
+        // Fallback: manual show
+        modalEl.style.display = 'block';
+        modalEl.classList.add('show');
+        modalEl.removeAttribute('aria-hidden');
+        modalEl.setAttribute('aria-modal','true');
+        // simple backdrop
+        let bd = document.querySelector('.modal-backdrop');
+        if(!bd){
+          bd = document.createElement('div');
+          bd.className = 'modal-backdrop fade show';
+          document.body.appendChild(bd);
+        }
+      }
+    };
+
+    // Helper to get the best available image source
+    const resolveSrc = (img)=> img.currentSrc || img.getAttribute('src') || img.getAttribute('data-src');
+
+    // Determine if an image should open in lightbox
+    const shouldLightbox = (img)=>{
+      if(!img || !(img instanceof HTMLImageElement)) return false;
+      if(img.closest('.no-lightbox') || img.classList.contains('no-lightbox') || img.hasAttribute('data-no-lightbox')) return false;
+      // Skip very small images (likely icons)
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if((w && h) && (w < 64 || h < 64)) return false;
+      return true;
+    };
+
+    // Delegate clicks to any image (opt-out supported)
+    document.addEventListener('click', (e)=>{
+      const target = e.target;
+      if(!(target instanceof Element)) return;
+      const img = target.closest('img');
+      if(!img) return;
+      if(!shouldLightbox(img)) return;
+      e.preventDefault();
+      open(resolveSrc(img), img.getAttribute('alt'));
+    });
+
+    // Keyboard accessibility: Enter on focused images
+    const closeFallback = ()=>{
+      if(modal){ modal.hide && modal.hide(); return; }
+      modalEl.classList.remove('show');
+      modalEl.style.display = 'none';
+      modalEl.setAttribute('aria-hidden','true');
+      modalEl.removeAttribute('aria-modal');
+      const bd = document.querySelector('.modal-backdrop');
+      bd && bd.parentNode && bd.parentNode.removeChild(bd);
+    };
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key !== 'Enter') return;
+      const active = document.activeElement;
+      if(active && active.matches && active.matches('img')){
+        if(!shouldLightbox(active)) return;
+        e.preventDefault();
+        open(resolveSrc(active), active.getAttribute('alt'));
+      }
+    });
+
+    // Close on Esc (fallback only)
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape') closeFallback();
+    });
+    // Close when clicking backdrop (fallback only)
+    document.addEventListener('click', (e)=>{
+      const bd = document.querySelector('.modal-backdrop');
+      if(bd && e.target === bd){ closeFallback(); }
+    });
+  };
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
+})();
+
 // Set hero background from data attribute
 (function(){
   const h = document.querySelector('.js-hero');
@@ -80,6 +219,23 @@
   const optSystem = document.getElementById('themeSystem');
   let sysHandler = null;
 
+  // Respect cache consent for persistence (localStorage)
+  const getCookie = (name)=>{
+    const key = name + '=';
+    const parts = document.cookie.split(';');
+    for(let i=0;i<parts.length;i++){
+      let c = parts[i].trim();
+      if(c.indexOf(key)===0) return decodeURIComponent(c.substring(key.length));
+    }
+    return null;
+  };
+  const cacheAllowed = (getCookie('cache-consent') || getCookie('cookie-consent')) !== 'declined';
+  const storage = {
+    getItem: (k)=> cacheAllowed ? window.localStorage.getItem(k) : null,
+    setItem: (k,v)=>{ if(cacheAllowed) try{ window.localStorage.setItem(k,v);}catch(e){} },
+    removeItem: (k)=>{ if(cacheAllowed) try{ window.localStorage.removeItem(k);}catch(e){} }
+  };
+
   const setMeta = (val)=>{
     if(!metaTheme) return;
     metaTheme.setAttribute('content', val === 'dark' ? '#0f131a' : '#0d6efd');
@@ -117,18 +273,13 @@
     updateThemeImages(isDark);
   };
 
-  const saved = localStorage.getItem(key);
+  const saved = storage.getItem(key);
   if(saved === 'dark' || saved === 'light'){
     apply(saved);
   }else{
-    // No explicit choice: follow system and react to changes
-    const prefersDark = sys && sys.matches;
-    apply(prefersDark ? 'dark' : 'light');
-    if(sys){
-      sysHandler = (e)=> apply(e.matches ? 'dark' : 'light');
-      if(sys.addEventListener){ sys.addEventListener('change', sysHandler); }
-      else if(sys.addListener){ sys.addListener(sysHandler); }
-    }
+    // Default to light regardless of system preference
+    apply('light');
+    // Do not attach system listener by default
   }
 
   const detachSys = ()=>{
@@ -140,11 +291,11 @@
 
   const setPreference = (mode)=>{
     if(mode === 'light' || mode === 'dark'){
-      localStorage.setItem(key, mode);
+      storage.setItem(key, mode);
       detachSys();
       apply(mode);
     }else{ // system
-      localStorage.removeItem(key);
+      storage.removeItem(key);
       const useDark = sys && sys.matches;
       apply(useDark ? 'dark' : 'light');
       // attach system listener
@@ -225,6 +376,160 @@
   };
   window.addEventListener('scroll', onScroll, {passive:true});
   onScroll();
+})();
+
+// Timed prompts based on time on page (no scroll required): 20s (rate), 45s (contact), 90s (contact)
+(function(){
+  const init = ()=>{
+    const rateModalEl = document.getElementById('ratePromptModal');
+    const contactModalEl = document.getElementById('contactPromptModal');
+    if(!rateModalEl && !contactModalEl) return; // nothing to do
+
+    // Respect cookie/cache consent for persistence
+    const getCookie = (name)=>{
+      const key = name + '=';
+      const parts = document.cookie.split(';');
+      for(let i=0;i<parts.length;i++){
+        let c = parts[i].trim();
+        if(c.indexOf(key)===0) return decodeURIComponent(c.substring(key.length));
+      }
+      return null;
+    };
+    const cacheAllowed = (getCookie('cache-consent') || getCookie('cookie-consent')) !== 'declined';
+    const storage = cacheAllowed ? window.localStorage : window.sessionStorage;
+
+    // Suppress prompts for a period after first shown
+    const SUPPRESS_KEY = 'nasam-prompt-suppress-until';
+    const now = Date.now();
+    const untilStr = (storage && storage.getItem) ? storage.getItem(SUPPRESS_KEY) : null;
+    const suppressUntil = untilStr ? parseInt(untilStr, 10) || 0 : 0;
+    const isSuppressed = suppressUntil && now < suppressUntil;
+
+    const setSuppressed = ()=>{
+      try{
+        if(!storage || !storage.setItem) return;
+        // 24h suppression if localStorage allowed, else session-only (any value works)
+        const ttl = cacheAllowed ? (now + 24*60*60*1000) : (now + 5*60*1000); // session fallback value is ignored on session end
+        storage.setItem(SUPPRESS_KEY, String(ttl));
+      }catch(e){ /* ignore */ }
+    };
+
+    // Per-page-view flags (reset on reload/navigation)
+    const fired = {
+      rate20: false,
+      contact45: false,
+      contact90: false,
+    };
+
+    const anyModalOpen = () => !!document.querySelector('.modal.show');
+
+    // Queue showing a modal when safe (no overlapping)
+    const tryShow = (el)=>{
+      if(!el) return;
+      if(isSuppressed) return; // do not show if within suppression window
+      const showNow = ()=>{
+        const inst = (window.bootstrap && window.bootstrap.Modal)
+          ? window.bootstrap.Modal.getOrCreateInstance(el)
+          : null;
+        if(inst){ inst.show(); }
+        else{
+          // Fallback minimal show
+          el.style.display = 'block';
+          el.classList.add('show');
+          el.removeAttribute('aria-hidden');
+          el.setAttribute('aria-modal','true');
+        }
+        // once we show any prompt, suppress future prompts for the period
+        setSuppressed();
+      };
+      if(!anyModalOpen()){
+        showNow();
+      }else{
+        const once = ()=>{
+          document.removeEventListener('hidden.bs.modal', once, true);
+          // slight delay to allow backdrop cleanup
+          setTimeout(()=>{ if(!anyModalOpen()) showNow(); }, 120);
+        };
+        document.addEventListener('hidden.bs.modal', once, true);
+      }
+    };
+
+    // Schedule prompts on wall-clock time since page load
+    const schedule = (ms, key, el)=>{
+      if(!el) return; // skip if modal not present
+      setTimeout(()=>{
+        if(!fired[key]){
+          fired[key] = true;
+          tryShow(el);
+        }
+      }, ms);
+    };
+
+    // 20s -> rate; 45s -> contact; 90s -> contact again
+    schedule(20000, 'rate20', rateModalEl);
+    schedule(45000, 'contact45', contactModalEl);
+    schedule(90000, 'contact90', contactModalEl);
+  };
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
+})();
+
+// Cookie consent management (init after DOMContentLoaded)
+(function(){
+  const init = ()=>{
+    const banner = document.getElementById('cookieConsent');
+    if(!banner) return;
+
+    // Simple cookie helpers
+    const setCookie = (name, value, days)=>{
+      const d = new Date();
+      d.setTime(d.getTime() + (days*24*60*60*1000));
+      const expires = "expires=" + d.toUTCString();
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; SameSite=Lax${secure}`;
+    };
+    const getCookie = (name)=>{
+      const key = name + '=';
+      const parts = document.cookie.split(';');
+      for(let i=0;i<parts.length;i++){
+        let c = parts[i].trim();
+        if(c.indexOf(key)===0) return decodeURIComponent(c.substring(key.length));
+      }
+      return null;
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const forceShow = params.get('consent') === 'show';
+    const choice = getCookie('cookie-consent');
+    if(forceShow || !choice){
+      banner.classList.add('show');
+    }
+
+    const hide = ()=> banner.classList.remove('show');
+    const acceptBtn = document.getElementById('cookieAccept');
+    const declineBtn = document.getElementById('cookieDecline');
+    acceptBtn && acceptBtn.addEventListener('click', ()=>{
+      setCookie('cookie-consent','accepted', 180); // 6 months
+      setCookie('cache-consent','accepted', 180);
+      hide();
+      // Place to initialize optional tracking/analytics if ever added
+    });
+    declineBtn && declineBtn.addEventListener('click', ()=>{
+      setCookie('cookie-consent','declined', 180);
+      setCookie('cache-consent','declined', 180);
+      hide();
+    });
+  };
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
 })();
 
 // Star rating input (reviews)

@@ -36,6 +36,11 @@ def home(request):
     except Exception:
         testimonials = Review.objects.none()
     ctx['testimonials'] = testimonials
+    # All service categories for homepage section
+    try:
+        ctx['categories'] = ServiceCategory.objects.all().prefetch_related('photos')
+    except Exception:
+        ctx['categories'] = ServiceCategory.objects.none()
     return render(request, 'home.html', ctx)
 
 
@@ -133,10 +138,10 @@ def service_category_detail(request, slug: str):
             else:
                 review: Review = form.save(commit=False)
                 review.category = category
-                # New reviews require admin approval
-                review.is_approved = False
+                # Auto-approve reviews by default
+                review.is_approved = True
                 review.save()
-                messages.success(request, 'Thank you for your review! It will appear once approved.')
+                messages.success(request, 'Thank you for your review! It is now live.')
                 return redirect('service_category_detail', slug=slug)
         else:
             messages.error(request, 'Please correct the errors below.')

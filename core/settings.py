@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -34,6 +35,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -144,7 +146,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'emiliomurithi4@gmail.com')
 COMPANY = {
     'name': 'NASAM HI-TECH ELECTRICALS',
     'tagline': 'Electrical Contractor',
-    'phones': ['+254 722 52 17 52', '+254 722 60 68 84'],
+    'phones': ['+254 722 52 17 52', '+254 722 31 92 92'],
     'email': 'emiliomurithi4@gmail.com',
     'locations': [
         'Samnima House, Nairobi, Kenya',
@@ -157,3 +159,20 @@ COMPANY = {
 # RECAPTCHA_SITE_KEY and RECAPTCHA_SECRET_KEY
 RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY', '')
 RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY', '')
+
+# Caching (per-site cache via middleware)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'nasam-local-cache',
+    }
+}
+CACHE_MIDDLEWARE_SECONDS = int(os.getenv('CACHE_SECONDS', '600'))  # 10 minutes default
+CACHE_MIDDLEWARE_KEY_PREFIX = 'nasam'
+
+# Cookie settings (can be hardened in production)
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', str(60 * 60 * 24 * 14)))  # 2 weeks
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False').lower() == 'true'

@@ -12,10 +12,10 @@
         <a class="btn btn-accent me-2" href="{{ hero.secondary_cta_url|default:'/contact/' }}"><i class="fa-solid fa-paper-plane me-1"></i>{{ hero.secondary_cta_text|default:'Request a Quote' }}</a>
         <a class="btn btn-outline-light" href="{{ hero.primary_cta_url|default:'/services/' }}"><i class="fa-solid fa-bolt me-1"></i>{{ hero.primary_cta_text|default:'Our Services' }}</a>
         <div class="d-inline-flex align-items-center ms-2 gap-2">
-          <a class="btn btn-whatsapp btn-sm" href="https://wa.me/254722521752" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+          <a class="btn btn-whatsapp btn-sm" href="https://wa.me/254722319292" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
             <i class="fa-brands fa-whatsapp me-1"></i>WhatsApp
           </a>
-          <a class="btn btn-outline-light btn-sm" href="tel:{{ company.phones|first|default:'254722521752' }}" aria-label="Call us">
+          <a class="btn btn-outline-light btn-sm" href="tel:{{ company.phones|last|cut:' ' |default:'254722319292' }}" aria-label="Call us">
             <i class="fa-solid fa-phone me-1"></i>Call
           </a>
         </div>
@@ -68,6 +68,59 @@
   
 </section>
 
+<!-- All Service Categories -->
+<section id="categories" class="py-5 border-top">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-3">
+      <h2 class="section-title mb-0">Explore Our Services</h2>
+      <a href="/services/" class="btn btn-outline-primary btn-sm">View all services</a>
+    </div>
+    {% if categories and categories|length > 0 %}
+    <div class="row g-4">
+      {% for c in categories %}
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/services/{{ c.slug }}/" class="text-decoration-none">
+          <div class="card h-100 shadow-sm">
+            {% with photos=c.photos.all %}
+            {% if photos %}
+            <div id="homeCatCarousel_{{ c.slug }}" class="carousel slide rounded-top overflow-hidden" data-bs-ride="carousel" data-bs-interval="6000" data-bs-pause="false" data-bs-wrap="true" data-bs-touch="true" aria-label="{{ c.name }} photos carousel">
+              <div class="carousel-inner">
+                {% for p in photos %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                  <div class="ratio ratio-16x9">
+                    <img src="{{ p.image.url }}" class="d-block w-100 h-100" style="object-fit:cover;" alt="{{ p.alt_text|default:p.title|default:c.name }}">
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {# no arrows or indicators, continuous autoplay #}
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="card-body">
+              <h5 class="card-title mb-1">{{ c.name }}</h5>
+              {% if c.description %}
+                <p class="card-text text-muted mb-0">{{ c.description|truncatewords:22 }}</p>
+              {% else %}
+                <p class="card-text text-muted mb-0">Learn more about our {{ c.name|lower }} solutions.</p>
+              {% endif %}
+              <div class="mt-3 d-flex gap-2 flex-wrap">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'service_category_detail' slug=c.slug %}"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
+                <a class="btn btn-accent btn-sm" href="{% url 'service_category_detail' slug=c.slug %}">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="mb-0">No categories available yet.</p>
+    {% endif %}
+  </div>
+  
+</section>
+
 <!-- Testimonials Carousel -->
 <section class="py-5 bg-light border-top">
   <div class="container">
@@ -78,8 +131,8 @@
       <div class="carousel-inner">
         {% for r in testimonials %}
         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-          <div class="d-flex flex-column gap-3">
-            <div class="d-flex align-items-center gap-3">
+          <div class="d-flex flex-column gap-3 align-items-center text-center">
+            <div class="d-flex align-items-center justify-content-center gap-3">
               <div class="d-flex" aria-label="{{ r.rating }} out of 5 stars">
                 {% for _ in '12345' %}
                   <i class="fa-solid fa-star{% if forloop.counter <= r.rating %} text-warning{% else %} text-secondary{% endif %}"></i>
