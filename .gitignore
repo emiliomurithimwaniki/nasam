@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Django
+staticfiles/
+*.log
+local_settings.py
+
+# Environment variables
+.env
+.env.*
+
+# Coverage/Testing
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# SQLite (keep if you want DB in repo; default is to ignore)
+# Uncomment to exclude DB file from repo
+# db.sqlite3

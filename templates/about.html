@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %} | About{% endblock %}
+{% block content %}
+<section class="py-5 section-about">
+  <div class="container">
+    <h1 class="mb-4 section-title">About Us</h1>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <p>At <strong>{{ company.name }}</strong>, our mission is to deliver safe, reliable, and efficient electrical and solar solutions that power progress for our clients. We are guided by a vision of sustainable energy adoption and excellence in engineering practice.</p>
+        <p>We are committed to compliance, safety, and professionalism across every project — from residential installations to large-scale industrial systems.</p>
+
+        <div class="timeline mt-4">
+          <div class="timeline-item">
+            <h6 class="mb-1">Discovery & Design</h6>
+            <small class="text-muted">Site survey, load assessment, and tailored engineering designs.</small>
+          </div>
+          <div class="timeline-item">
+            <h6 class="mb-1">Supply & Installation</h6>
+            <small class="text-muted">Quality components, professional wiring, and safety-first practices.</small>
+          </div>
+          <div class="timeline-item">
+            <h6 class="mb-1">Testing & Commissioning</h6>
+            <small class="text-muted">IEE-compliant tests and documentation before handover.</small>
+          </div>
+          <div class="timeline-item">
+            <h6 class="mb-1">Support & Maintenance</h6>
+            <small class="text-muted">Responsive after-care, system monitoring, and upgrades.</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="stat text-center">
+              <h3 class="count" data-count="10">0</h3>
+              <div>Years Experience</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat text-center">
+              <h3 class="count" data-count="250">0</h3>
+              <div>Projects Delivered</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat text-center">
+              <h3 class="count" data-count="98">0</h3>
+              <div>% Client Satisfaction</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat text-center">
+              <h3 class="count" data-count="24">0</h3>
+              <div>7 Support</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

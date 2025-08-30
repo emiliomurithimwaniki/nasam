@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Terms & Conditions | {{ company.name }}{% endblock %}
+{% block content %}
+<section class="error-404-hero py-5">
+  <div class="container">
+    <h1 class="mb-3 text-light">Terms & Conditions</h1>
+    <p class="text-white-50 small">Last updated: {% now "F j, Y" %}</p>
+
+    <h2 class="h5 mt-4">1. Introduction</h2>
+    <p>These terms govern your use of this website and our services. By accessing this site, you agree to these terms.</p>
+
+    <h2 class="h5 mt-4">2. Services</h2>
+    <p>We aim to deliver services professionally and on time. Specific scopes, timelines, and pricing are defined in quotations and agreements.</p>
+
+    <h2 class="h5 mt-4">3. Payments</h2>
+    <p>Payment terms are as stated in issued quotations or invoices. Late payments may affect delivery timelines.</p>
+
+    <h2 class="h5 mt-4">4. Liability</h2>
+    <p>To the maximum extent permitted by law, {{ company.name }} is not liable for indirect or consequential losses.</p>
+
+    <h2 class="h5 mt-4">5. Intellectual Property</h2>
+    <p>Content on this site is owned by {{ company.name }} unless otherwise indicated. Do not reuse without permission.</p>
+
+    <h2 class="h5 mt-4">6. Contact</h2>
+    <p>Questions about these terms? Contact us at <a href="mailto:{{ company.email|default:'emiliomurithi4@gmail.com' }}">{{ company.email|default:'emiliomurithi4@gmail.com' }}</a>.</p>
+  </div>
+</section>
+{% endblock %}

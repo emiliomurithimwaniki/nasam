@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} — Projects{% endblock %}
+
+{% block content %}
+<section class="error-404-hero py-5 border-bottom-0">
+  <div class="container">
+    <div class="row align-items-end g-3">
+      <div class="col-12 col-md-8">
+        <h1 class="display-6 mb-2 text-light">Recent Projects</h1>
+        <p class="lead text-white-50 mb-0">A selection of our electrical and solar installations across Kenya.</p>
+      </div>
+      <div class="col-12 col-md-4 text-md-end">
+        <a href="/contact/" class="btn btn-accent">Request a Quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="error-404-body py-5">
+  <div class="container">
+    {% if photos %}
+      <div class="row g-4">
+        {% for photo in photos %}
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="card h-100 shadow-sm">
+              <img src="{{ photo.image.url }}" class="card-img-top" alt="{{ photo.alt_text|default:photo.title|default:'Project photo' }}">
+              <div class="card-body">
+                <div class="small text-muted mb-1">{{ photo.category.name }}</div>
+                <div class="fw-semibold">{{ photo.title|default:'Project' }} </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <img src="{% static 'img/empty-state.svg' %}" alt="No projects yet" style="height:120px" class="mb-3 opacity-75" onerror="this.style.display='none'">
+        <p class="lead mb-3">No project photos yet.</p>
+        <a href="/admin/website/servicephoto/add/" class="btn btn-primary">Upload a project photo</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

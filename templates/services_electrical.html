@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %} | Electrical Engineering{% endblock %}
+{% block content %}
+<section class="py-5">
+  <div class="container">
+    <h1 class="mb-4 section-title">Electrical Engineering</h1>
+    <p class="lead">End-to-end industrial, commercial, and residential electrical solutions with strict adherence to IEE standards.</p>
+
+    <div class="row g-4 mt-2">
+      <div class="col-lg-7">
+        <h2 class="h5 mb-3">Our Process</h2>
+        <ol class="list-group list-group-numbered shadow-sm">
+          <li class="list-group-item">Site survey and load assessment</li>
+          <li class="list-group-item">Design and bill of quantities (BoQ)</li>
+          <li class="list-group-item">Supply of quality components</li>
+          <li class="list-group-item">Installation by certified technicians</li>
+          <li class="list-group-item">Testing, commissioning, and documentation</li>
+          <li class="list-group-item">Maintenance and after-sales support</li>
+        </ol>
+      </div>
+      <div class="col-lg-5">
+        <h2 class="h5 mb-3">Gallery</h2>
+        <div class="row g-3">
+          <div class="col-6"><img class="img-fluid rounded" src="{% static 'img/gallery/elec1.jpg' %}" alt="Industrial panel" onerror="this.style.display='none'"></div>
+          <div class="col-6"><img class="img-fluid rounded" src="{% static 'img/gallery/elec2.jpg' %}" alt="Wiring and trunking" onerror="this.style.display='none'"></div>
+          <div class="col-6"><img class="img-fluid rounded" src="{% static 'img/gallery/elec3.jpg' %}" alt="Lighting install" onerror="this.style.display='none'"></div>
+          <div class="col-6"><img class="img-fluid rounded" src="{% static 'img/gallery/elec4.jpg' %}" alt="Testing equipment" onerror="this.style.display='none'"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <a class="btn btn-accent" href="/contact/"><i class="fa-solid fa-clipboard-list me-1"></i>Request a Quote</a>
+      <a class="btn btn-outline-primary" href="/services/"><i class="fa-solid fa-arrow-left me-1"></i>Back to Services</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

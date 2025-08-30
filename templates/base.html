@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ company.name }}{% block title %}{% endblock %}</title>
+  <meta name="description" content="Electrical engineering and solar power solutions in Kenya. Quality, innovation, customer satisfaction.">
+  <meta name="theme-color" content="#0d6efd">
+  <meta property="og:title" content="{{ company.name }}">
+  <meta property="og:description" content="Electrical engineering & solar power solutions. Quality • Innovation • Customer Satisfaction.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="{{ branding.favicon_url }}" type="image/png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "{{ company.name }}",
+    "image": "{{ branding.logo_url }}",
+    "url": "{{ request.scheme }}://{{ request.get_host }}/",
+    "telephone": "{{ company.phones|first }}",
+    "email": "{{ company.email }}",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "{{ company.locations|first }}",
+      "addressCountry": "KE"
+    },
+    "areaServed": "KE",
+    "sameAs": [
+      "https://www.facebook.com/",
+      "https://www.linkedin.com/"
+    ],
+    "makesOffer": [
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Electrical Engineering",
+          "serviceType": "Industrial, commercial and residential installations"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Solar Power Systems",
+          "serviceType": "Design and installation of solar systems"
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div id="scrollProgress" aria-hidden="true"></div>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top blur-nav" role="navigation" aria-label="Primary">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+        <img src="{{ branding.logo_url }}"
+             data-theme-src-light="{{ branding.logo_url }}"
+             data-theme-src-dark="{{ branding.logo_url }}"
+             alt="{{ company.name }}" onerror="this.style.display='none'" class="me-2" style="height:40px;">
+        <div class="d-flex flex-column lh-1">
+          <span class="fw-bold text-primary">{{ company.name }}</span>
+          <small class="text-muted">{{ company.tagline }}</small>
+        </div>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="/" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>Home</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'services' %}active{% endif %}" href="/services/" {% if request.resolver_match.url_name == 'services' %}aria-current="page"{% endif %}>Services</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="/about/" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>About</a></li>
+          <li class="nav-item"><a class="btn btn-accent ms-lg-2" href="/contact/">Contact</a></li>
+          <li class="nav-item dropdown ms-lg-2">
+            <button id="themeToggle" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-pressed="false" aria-label="Theme options">
+              <i class="fa-solid fa-moon"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><button class="dropdown-item" type="button" data-theme-choice="light" id="themeLight"><i class="fa-regular fa-sun me-2"></i>Light</button></li>
+              <li><button class="dropdown-item" type="button" data-theme-choice="dark" id="themeDark"><i class="fa-regular fa-moon me-2"></i>Dark</button></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item" type="button" data-theme-choice="system" id="themeSystem"><i class="fa-solid fa-circle-half-stroke me-2"></i>Use system</button></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  {% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main id="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer mt-5 position-relative overflow-hidden">
+    <!-- Ribbon CTA -->
+    <div class="container">
+      <div class="cta-ribbon d-flex flex-column flex-md-row align-items-center justify-content-between p-4 p-md-5 mb-4 shadow-sm">
+        <div class="mb-3 mb-md-0">
+          <h5 class="mb-1">Ready to power your next project?</h5>
+          <div class="opacity-75">Get a free consultation and a fast quote from our certified team.</div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/contact/" class="btn btn-dark"><i class="fa-solid fa-paper-plane me-1"></i>Request a Quote</a>
+          <a href="https://wa.me/254722521752" class="btn btn-whatsapp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp me-1"></i>WhatsApp</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main footer -->
+    <div class="footer-main py-5">
+      <div class="container">
+        <div class="row g-4 align-items-start">
+          <div class="col-md-4">
+            <div class="d-flex align-items-center mb-2">
+              <img src="{{ branding.logo_url }}"
+                   data-theme-src-light="{{ branding.logo_url }}"
+                   data-theme-src-dark="{{ branding.logo_url }}"
+                   alt="{{ company.name }} logo" onerror="this.style.display='none'" style="height:40px" class="me-2">
+              <div class="fw-bold">{{ company.name }}</div>
+            </div>
+            <p class="mb-3 small opacity-85">{{ company.tagline }}</p>
+            <div class="social larger">
+              <a href="https://facebook.com" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+              <a href="https://twitter.com" target="_blank" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+              <a href="https://www.instagram.com" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+              <a href="https://www.linkedin.com" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            </div>
+            <form id="newsletterForm" class="newsletter mt-3" autocomplete="email">
+              <label for="newsletterEmail" class="form-label small mb-1">Subscribe for updates</label>
+              <div class="input-group input-group-sm">
+                <input id="newsletterEmail" name="email" type="email" class="form-control" placeholder="Enter your email" required>
+                <button class="btn btn-accent" type="submit">Subscribe</button>
+              </div>
+              <div class="form-text text-white-50">No spam, unsubscribe anytime.</div>
+            </form>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="footer-title">Company</div>
+            <ul class="list-unstyled mb-0 footer-links">
+              <li><a href="/">Home</a></li>
+              <li><a href="/services/">Services</a></li>
+              <li><a href="/about/">About</a></li>
+              <li><a href="/contact/">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="footer-title">Resources</div>
+            <ul class="list-unstyled mb-0 footer-links">
+              <li><a href="/projects/">Projects</a></li>
+              <li><a href="/certifications/">Certifications</a></li>
+              <li><a href="/faq/">FAQ</a></li>
+            </ul>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="footer-title">Contact</div>
+            <ul class="list-unstyled mb-3 footer-links">
+              <li><i class="fa-solid fa-envelope me-2"></i><a href="mailto:{% if company.email %}{{ company.email }}{% else %}emiliomurithi4@gmail.com{% endif %}">{% if company.email %}{{ company.email }}{% else %}emiliomurithi4@gmail.com{% endif %}</a></li>
+              <li><i class="fa-solid fa-phone me-2"></i>{{ company.phones|join:', ' }}</li>
+            </ul>
+            <div class="d-flex gap-2">
+              <a href="tel:{{ company.phones|first }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-phone me-1"></i>Call</a>
+              <a href="https://wa.me/254722521752" class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp me-1"></i>WhatsApp</a>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="footer-title">Locations</div>
+            <ul class="list-unstyled mb-0 footer-links">
+              {% for loc in company.locations %}
+                <li><i class="fa-solid fa-location-dot me-2"></i>{{ loc }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bottom py-3">
+      <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small opacity-85">
+        <div>© <span id="y"></span> {{ company.name }}. All rights reserved. • Website by Emitech — <a class="footer-legal" href="https://wa.me/254796031071?text=Hi%20Emitech%2C%20I%27m%20interested%20in%20a%20website%20for%20my%20business.%20I%20saw%20this%20site%20and%20want%20one.%20Thanks!" target="_blank" rel="noopener">Get yours</a></div>
+        <div class="d-flex gap-3">
+          <a href="/privacy/" class="footer-legal">Privacy</a>
+          <a href="/terms/" class="footer-legal">Terms</a>
+        </div>
+      </div>
+    </div>
+    <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+  </footer>
+
+  <!-- Floating WhatsApp button -->
+  <a class="fab-whatsapp" href="https://wa.me/254722521752" target="_blank" aria-label="Chat on WhatsApp">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <!-- Back to top -->
+  <button id="backToTop" class="back-to-top" aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
