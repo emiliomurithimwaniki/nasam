@@ -7,8 +7,13 @@ export PYTHONUNBUFFERED=1
 # Default to production settings
 export DJANGO_DEBUG=${DJANGO_DEBUG:-False}
 
+# Ensure SQLite directory exists if SQLITE_PATH is provided (Railway volume)
+if [ -n "${SQLITE_PATH:-}" ]; then
+  mkdir -p "$(dirname "$SQLITE_PATH")"
+fi
+
 python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear
 
 # Start Gunicorn bound to the port provided by Railway
 exec gunicorn core.wsgi:application \

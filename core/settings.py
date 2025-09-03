@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,12 +12,12 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 # Hosts and CSRF origins (configurable for Railway via env)
 # DJANGO_ALLOWED_HOSTS: space-separated list, e.g. "yourapp.up.railway.app example.com"
 ALLOWED_HOSTS: list[str] = os.getenv(
-    'DJANGO_ALLOWED_HOSTS', 'localhost 127.0.0.1'
+    'DJANGO_ALLOWED_HOSTS', 'localhost 127.0.0.1 0.0.0.0 nasam-2iqm.onrender.com web-production-10948.up.railway.app .up.railway.app'
 ).split()
 
 # DJANGO_CSRF_TRUSTED_ORIGINS: space-separated, full origins e.g. "https://yourapp.up.railway.app https://example.com"
 CSRF_TRUSTED_ORIGINS = os.getenv(
-    'DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost http://127.0.0.1'
+    'DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost http://127.0.0.1 https://*.up.railway.app'
 ).split()
 
 INSTALLED_APPS = [
@@ -68,9 +69,23 @@ ASGI_APPLICATION = 'core.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.getenv('SQLITE_PATH', str(BASE_DIR / 'db.sqlite3')),
     }
 }
+
+# If DATABASE_URL is provided (e.g., Railway Postgres), use it
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    try:
+        import dj_database_url  # type: ignore
+    except Exception as e:
+        print("Warning: dj-database-url not installed; falling back to SQLite", file=sys.stderr)
+    else:
+        DATABASES['default'] = dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', '600')),
+            ssl_require=(os.getenv('DB_DISABLE_SSL', 'False').lower() != 'true'),
+        )
 
 AUTH_PASSWORD_VALIDATORS = []
 
@@ -82,8 +97,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# WhiteNoise compressed manifest storage for efficient static serving
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# WhiteNoise compressed storage (non-manifest) to avoid strict failures on missing sourcemaps
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media (user uploads)
 MEDIA_URL = '/media/'
