@@ -102,7 +102,16 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media (user uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Allow overriding MEDIA_ROOT via env (e.g., Railway volume mount like /data/media)
+from pathlib import Path as _Path  # local alias to avoid shadowing
+_media_root_env = os.getenv('MEDIA_ROOT')
+MEDIA_ROOT = _Path(_media_root_env) if _media_root_env else BASE_DIR / 'media'
+# Ensure the directory exists to prevent runtime errors when uploading
+try:
+    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+except Exception:
+    # If filesystem is read-only, ignore; uploads will fail explicitly later
+    pass
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -8,9 +8,10 @@ urlpatterns = [
     path('', include('website.urls')),
 ]
 
+# Always serve media; WhiteNoise handles static. Serving media with Django is acceptable for small sites.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Custom error handlers
 handler404 = 'website.views.custom_404'
