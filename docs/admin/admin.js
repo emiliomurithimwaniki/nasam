@@ -203,7 +203,12 @@ async function renderSection(key) {
 // --- Company ---
 async function renderCompany() {
   els.viewTitle.textContent = 'Company';
-  const data = await readDoc(['siteContent','company']) || {};
+  let data = {};
+  try {
+    data = await readDoc(['siteContent','company']) || {};
+  } catch (err) {
+    console.error('Failed to load company content', err);
+  }
   els.view.innerHTML = `
     <form id="companyForm" class="row g-3">
       <div class="col-md-6">
@@ -213,6 +218,10 @@ async function renderCompany() {
       <div class="col-md-6">
         <label class="form-label">Tagline</label>
         <input type="text" class="form-control" id="cTagline" value="${safe(data.tagline)}">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Intro / About</label>
+        <textarea class="form-control" id="cIntro" rows="4" placeholder="Short company description">${safe(data.intro)}</textarea>
       </div>
       <div class="col-md-6">
         <label class="form-label">Email</label>
@@ -230,6 +239,30 @@ async function renderCompany() {
         <label class="form-label">Locations (one per line)</label>
         <textarea class="form-control" rows="3" id="cLocs">${toTextarea(data.locations)}</textarea>
       </div>
+      <div class="col-12">
+        <div class="row g-3">
+          <div class="col-12">
+            <h6 class="mb-0">Official Links</h6>
+            <p class="text-muted small mb-2">Provide full URLs for company profiles.</p>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Facebook</label>
+            <input type="url" class="form-control" id="cFacebook" value="${safe(data.social?.facebook)}" placeholder="https://facebook.com/...">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Instagram</label>
+            <input type="url" class="form-control" id="cInstagram" value="${safe(data.social?.instagram)}" placeholder="https://www.instagram.com/...">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">LinkedIn</label>
+            <input type="url" class="form-control" id="cLinkedIn" value="${safe(data.social?.linkedin)}" placeholder="https://www.linkedin.com/...">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">X (Twitter)</label>
+            <input type="url" class="form-control" id="cX" value="${safe(data.social?.x)}" placeholder="https://x.com/...">
+          </div>
+        </div>
+      </div>
       <div class="form-actions">
         <button class="btn btn-primary" id="saveCompany">Save</button>
       </div>
@@ -237,14 +270,24 @@ async function renderCompany() {
 
   q('#saveCompany')?.addEventListener('click', async (e) => {
     e.preventDefault();
+    const clean = (value) => (value || '').trim();
     const payload = {
-      name: q('#cName')?.value || '',
-      tagline: q('#cTagline')?.value || '',
-      email: q('#cEmail')?.value || '',
-      whatsapp: q('#cWhats')?.value || '',
+      name: clean(q('#cName')?.value),
+      tagline: clean(q('#cTagline')?.value),
+      intro: clean(q('#cIntro')?.value),
+      email: clean(q('#cEmail')?.value),
+      whatsapp: clean(q('#cWhats')?.value),
       phones: parseLines(q('#cPhones')?.value || ''),
       locations: parseLines(q('#cLocs')?.value || '')
     };
+    const rawSocial = {
+      facebook: clean(q('#cFacebook')?.value),
+      instagram: clean(q('#cInstagram')?.value),
+      linkedin: clean(q('#cLinkedIn')?.value),
+      x: clean(q('#cX')?.value)
+    };
+    const social = Object.fromEntries(Object.entries(rawSocial).filter(([, val]) => !!val));
+    payload.social = social;
     const btn = e.currentTarget;
     try {
       setLoading(btn, true);
