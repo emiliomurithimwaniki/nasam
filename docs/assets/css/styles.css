@@ -428,12 +428,49 @@ h1,h2,h3{letter-spacing:.2px}
 }
 
 /* Responsive tweaks */
+@media (max-width: 1199.98px) {
+  .hero-reactive-bg::before {
+    inset: -20px -18px -20px 22%;
+  }
+}
+
 @media (max-width: 991.98px) {
   .stat-card {
     flex-direction: row;
   }
   .process-step {
     padding: 1.75rem 1.4rem;
+  }
+  .hero .container > .row {
+    text-align: center;
+  }
+  .hero .hero-reactive-bg {
+    margin-bottom: 2rem;
+  }
+  .hero .hero-reactive-bg::before {
+    inset: -16px -16px -16px 16%;
+  }
+  .hero .d-flex.flex-wrap {
+    justify-content: center;
+  }
+  .hero-points {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .hero-stats .stat-card {
+    text-align: left;
+  }
+  .cta-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: .75rem;
+  }
+  .cta-panel .btn {
+    width: 100%;
   }
 }
 
@@ -443,6 +480,19 @@ h1,h2,h3{letter-spacing:.2px}
   }
   .feature-chip {
     flex-direction: row;
+  }
+  .hero .badge {
+    font-size: .9rem;
+  }
+  .hero .d-flex.flex-wrap {
+    width: 100%;
+    gap: .75rem;
+  }
+  .hero .d-flex.flex-wrap > .btn {
+    flex: 1 1 100%;
+  }
+  .hero-points {
+    gap: .75rem;
   }
 }
 

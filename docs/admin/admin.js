@@ -304,7 +304,12 @@ async function renderCompany() {
 // --- Branding ---
 async function renderBranding() {
   els.viewTitle.textContent = 'Branding';
-  const data = await readDoc(['siteContent','branding']) || {};
+  let data = {};
+  try {
+    data = await readDoc(['siteContent','branding']) || {};
+  } catch (err) {
+    console.error('Failed to load branding content', err);
+  }
   els.view.innerHTML = `
     <form id="brandingForm" class="row g-3">
       <div class="col-md-6">
@@ -388,7 +393,12 @@ async function renderBranding() {
 // --- Hero ---
 async function renderHero() {
   els.viewTitle.textContent = 'Hero';
-  const data = await readDoc(['siteContent','hero']) || {};
+  let data = {};
+  try {
+    data = await readDoc(['siteContent','hero']) || {};
+  } catch (err) {
+    console.error('Failed to load hero content', err);
+  }
   els.view.innerHTML = `
     <form id="heroForm" class="row g-3">
       <div class="col-md-6">
@@ -456,7 +466,12 @@ async function renderHero() {
 // --- Hero Photos ---
 async function renderHeroPhotos() {
   els.viewTitle.textContent = 'Hero Photos';
-  const list = await listCollection('heroPhotos');
+  let list = [];
+  try {
+    list = await listCollection('heroPhotos');
+  } catch (err) {
+    console.error('Failed to load hero photos', err);
+  }
 
   els.view.innerHTML = `
     <div class="section-toolbar mb-3">
@@ -607,7 +622,12 @@ async function confirmDelete(col, id, onDone) {
 // --- Categories ---
 async function renderCategories() {
   els.viewTitle.textContent = 'Service Categories';
-  const list = await listCollection('serviceCategories');
+  let list = [];
+  try {
+    list = await listCollection('serviceCategories');
+  } catch (err) {
+    console.error('Failed to load service categories', err);
+  }
 
   els.view.innerHTML = `
     <div class="row g-3">
@@ -739,8 +759,13 @@ async function renderProjects() {
   let list = [];
   try {
     list = await listCollectionOrdered('projects', 'order', true);
-  } catch {
-    list = await listCollection('projects');
+  } catch (err) {
+    console.error('Failed to load ordered projects', err);
+    try {
+      list = await listCollection('projects');
+    } catch (fallbackErr) {
+      console.error('Failed to load projects', fallbackErr);
+    }
   }
 
   els.view.innerHTML = `
@@ -872,8 +897,13 @@ async function renderReviews() {
   let list = [];
   try {
     list = await listCollectionOrdered('reviews', 'rating', false, 50);
-  } catch {
-    list = await listCollection('reviews');
+  } catch (err) {
+    console.error('Failed to load ordered reviews', err);
+    try {
+      list = await listCollection('reviews');
+    } catch (fallbackErr) {
+      console.error('Failed to load reviews', fallbackErr);
+    }
   }
   els.view.innerHTML = `
     <div class="table-responsive">
