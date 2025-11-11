@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -7,7 +7,9 @@ import {
   getDocs,
   query,
   orderBy,
-  limit
+  limit,
+  addDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const fallbackData = {
@@ -87,19 +89,67 @@ const fallbackData = {
   ],
   projects: [
     {
+      id: "hospital-solar",
       title: "Hospital Solar Upgrade",
       description: "Hybrid solar + generator integration providing uninterrupted power to critical wards.",
-      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/hospital-solar.jpg"
+      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/hospital-solar.jpg",
+      sector: "Healthcare",
+      location: "Nairobi, Kenya",
+      completedOn: "2024",
+      capacity: "50 kW",
+      longDescription: "A mission-critical hybrid solar system providing life-saving backup for intensive care units, theatres, and on-call facilities. NASAM HI-TECH designed redundancies that guarantee uninterrupted power even under fluctuating grid conditions.",
+      highlights: [
+        "Seamless switchover between solar, grid, and generator feeds",
+        "24/7 monitoring with remote fault diagnostics"
+      ],
+      gallery: [
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/hospital-solar.jpg",
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/solar-panels.jpg"
+      ],
+      ctaText: "Request a solar audit",
+      ctaUrl: "#contact"
     },
     {
+      id: "commercial-reticulation",
       title: "Commercial Reticulation",
       description: "Energy-efficient electrical upgrade for a multi-storey office complex in Nairobi.",
-      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/commercial-electric.jpg"
+      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/commercial-electric.jpg",
+      sector: "Commercial",
+      location: "Nairobi CBD",
+      completedOn: "2023",
+      scope: "Power distribution & lighting",
+      longDescription: "End-to-end modernization of the electrical backbone, upgrading aging switchgear, distribution panels, and lighting to meet new tenancy needs while minimizing downtime for occupants.",
+      highlights: [
+        "Reduced energy consumption by 28% through smart controls",
+        "Integrated backup systems for critical floors"
+      ],
+      gallery: [
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/commercial-electric.jpg",
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/electrical-room.jpg"
+      ],
+      ctaText: "Book a site assessment",
+      ctaUrl: "#contact"
     },
     {
+      id: "national-cctv",
       title: "National CCTV Network",
       description: "Smart surveillance and access control for a nationwide retail chain.",
-      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/security-monitoring.jpg"
+      image: "https://res.cloudinary.com/demo/image/upload/v1690000000/security-monitoring.jpg",
+      sector: "Retail",
+      location: "Kenya (32 outlets)",
+      completedOn: "2022",
+      scope: "Security & surveillance",
+      longDescription: "Designed and deployed a unified surveillance and access control platform across 32 locations with centralized monitoring, ensuring consistent standards and rapid incident response.",
+      highlights: [
+        "Centralized command center with live analytics",
+        "Biometric access control integrated across branches"
+      ],
+      gallery: [
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/security-monitoring.jpg",
+        "https://res.cloudinary.com/demo/image/upload/v1690000000/security-cameras.jpg"
+      ],
+      ctaText: "Schedule a security audit",
+      ctaUrl: "#contact"
     }
   ],
   reviews: [
@@ -118,6 +168,248 @@ const fallbackData = {
   ]
 };
 
+const categoryGalleryStore = new Map();
+const projectStore = new Map();
+let firebaseAppInstance = null;
+let firestoreDbInstance = null;
+let firebaseConfigCache = null;
+
+function ensureFirebase(config) {
+  if (!config) return null;
+  if (!firebaseConfigCache) {
+    firebaseConfigCache = config;
+  }
+  if (!firebaseAppInstance) {
+    firebaseAppInstance = getApps().length ? getApps()[0] : initializeApp(config);
+  }
+  if (!firestoreDbInstance) {
+    firestoreDbInstance = getFirestore(firebaseAppInstance);
+  }
+  return firestoreDbInstance;
+}
+
+function slugify(value, fallback = "") {
+  const base = String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+  if (base) return base;
+  return fallback;
+}
+
+function renderProjectDetailSections() {
+  const detailContainer = document.getElementById("projectDetailsList");
+  if (!detailContainer) return;
+
+  const sectionsHtml = Array.from(projectStore.entries())
+    .map(([projectId, data], index) => {
+      const primaryImage = data.images?.[0]?.url || fallbackData.projects[0]?.image || fallbackData.branding.ogImage;
+      const hasGallery = Array.isArray(data.images) && data.images.length > 1;
+      const galleryHtml = hasGallery
+        ? `<div class="d-flex gap-2 flex-wrap mt-3">${data.images
+            .slice(0, 4)
+            .map((img, idx) => `
+              <a href="${img.url}" target="_blank" rel="noopener" class="thumbnail-link" aria-label="Open project image ${idx + 1}">
+                <img src="${img.url}" alt="${img.alt || data.title}" class="project-thumb">
+              </a>`)
+            .join("")}${data.images.length > 4 ? `<span class="badge text-bg-primary align-self-center">+${data.images.length - 4} more</span>` : ""}</div>`
+        : "";
+
+      const metaHtml = Array.isArray(data.meta) && data.meta.length
+        ? `<ul class="list-unstyled row g-3" id="project-${projectId}-meta">
+            ${data.meta
+              .map((item) => `
+                <li class="col-sm-6 col-lg-4">
+                  <div class="border rounded-3 p-3 h-100">
+                    <div class="text-muted small text-uppercase">${item.label}</div>
+                    <div class="fw-semibold">${item.value}</div>
+                  </div>
+                </li>`)
+              .join("")}
+          </ul>`
+        : "";
+
+      const highlightsHtml = Array.isArray(data.highlights) && data.highlights.length
+        ? `<ul class="list-unstyled d-flex flex-column gap-2" id="project-${projectId}-highlights">
+            ${data.highlights
+              .map((point) => `
+                <li class="d-flex align-items-start gap-2">
+                  <i class="fa-solid fa-circle-check text-success mt-1"></i>
+                  <span>${point}</span>
+                </li>`)
+              .join("")}
+          </ul>`
+        : "";
+
+      const subtitleHtml = data.subtitle
+        ? `<p class="text-muted mb-3">${data.subtitle}</p>`
+        : "";
+
+      const ctaHtml = data.cta?.text
+        ? `<a class="btn btn-accent" href="${data.cta.url || '#contact'}">${data.cta.text} <i class="fa-solid fa-arrow-right ms-1"></i></a>`
+        : "";
+
+      return `
+        <article class="project-detail-section py-5 border-top" id="project-${projectId}" data-project-order="${index + 1}" tabindex="-1">
+          <div class="container">
+            <div class="row g-5 align-items-center">
+              <div class="col-lg-6">
+                <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
+                  <img src="${primaryImage}" alt="${data.title}" class="w-100 h-100" style="object-fit:cover;">
+                </div>
+                ${galleryHtml}
+              </div>
+              <div class="col-lg-6">
+                <span class="badge text-bg-primary-soft mb-2">Project ${index + 1}</span>
+                <h2 class="h3 fw-semibold mb-2">${data.title}</h2>
+                ${subtitleHtml}
+                <p class="text-muted">${data.description || "Project details coming soon."}</p>
+                ${metaHtml}
+                ${highlightsHtml}
+                ${ctaHtml ? `<div class="mt-4">${ctaHtml}</div>` : ""}
+              </div>
+            </div>
+          </div>
+        </article>`;
+    })
+    .join("");
+
+  detailContainer.innerHTML = sectionsHtml;
+}
+
+function focusProjectFromHash(options = { behavior: "smooth" }) {
+  if (typeof window === "undefined") return;
+  const { behavior } = options;
+  const hash = window.location.hash;
+  if (!hash || hash.length <= 1) return;
+  const targetId = hash.substring(1);
+  const target = document.getElementById(targetId);
+  if (!target) return;
+
+  target.scrollIntoView({ behavior, block: "start" });
+  if (typeof target.focus === "function") {
+    try {
+      target.focus({ preventScroll: true });
+    } catch (error) {
+      target.focus();
+    }
+  }
+  target.classList.add("project-scroll-highlight");
+  window.setTimeout(() => target.classList.remove("project-scroll-highlight"), 2000);
+}
+
+function normalizeCategoryImages(category) {
+  const name = category?.name || "Gallery";
+  const rawImages = Array.isArray(category?.images) && category.images.length
+    ? category.images
+    : Array.isArray(category?.image)
+      ? category.image
+      : [category?.image || fallbackData.branding.ogImage].filter(Boolean);
+
+  return rawImages
+    .map((image, idx) => {
+      if (!image) return null;
+      if (typeof image === "string") {
+        return {
+          url: image,
+          alt: `${name} photo ${idx + 1}`,
+          caption: ""
+        };
+      }
+      if (typeof image === "object") {
+        const url = image.url || image.src || image.image || "";
+        if (!url) return null;
+        return {
+          url,
+          alt: image.alt || image.title || `${name} photo ${idx + 1}`,
+          caption: image.caption || image.description || ""
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeProjectImages(project) {
+  const title = project?.title || "Project";
+  const imageSources = [];
+
+  if (Array.isArray(project?.gallery) && project.gallery.length) {
+    imageSources.push(...project.gallery);
+  }
+  if (Array.isArray(project?.images) && project.images.length) {
+    imageSources.push(...project.images);
+  }
+  [project?.coverImage, project?.image].forEach((src) => {
+    if (src) imageSources.push(src);
+  });
+
+  const seen = new Set();
+  const normalized = imageSources
+    .map((image, idx) => {
+      if (!image) return null;
+
+      if (typeof image === "string") {
+        if (seen.has(image)) return null;
+        seen.add(image);
+        return {
+          url: image,
+          alt: `${title} photo ${idx + 1}`,
+          caption: ""
+        };
+      }
+
+      if (typeof image === "object") {
+        const url = image.url || image.src || image.image || "";
+        if (!url || seen.has(url)) return null;
+        seen.add(url);
+        return {
+          url,
+          alt: image.alt || image.title || `${title} photo ${idx + 1}`,
+          caption: image.caption || image.description || ""
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+
+  if (!normalized.length) {
+    const fallbackUrl = fallbackData.projects[0]?.image || fallbackData.branding.ogImage;
+    normalized.push({
+      url: fallbackUrl,
+      alt: `${title} photo`,
+      caption: ""
+    });
+  }
+
+  return normalized;
+}
+
+function buildProjectMeta(project) {
+  const labelMap = [
+    ["sector", "Sector"],
+    ["location", "Location"],
+    ["completedOn", "Completed"],
+    ["capacity", "Capacity"],
+    ["scope", "Scope"],
+    ["status", "Status"],
+    ["client", "Client"],
+    ["duration", "Duration"]
+  ];
+
+  return labelMap
+    .map(([key, label]) => {
+      const value = project?.[key];
+      if (!value) return null;
+      const formatted = Array.isArray(value) ? value.filter(Boolean).join(", ") : value;
+      if (!formatted) return null;
+      return { label, value: formatted };
+    })
+    .filter(Boolean);
+}
+
 function textContent(el, value) {
   if (el && typeof value === "string") {
     el.textContent = value;
@@ -133,6 +425,28 @@ function setHref(el, value) {
 function setSrc(el, value) {
   if (el && typeof value === "string") {
     el.setAttribute("src", value);
+  }
+}
+
+function setSkeletonLoading(active, { delay = 0 } = {}) {
+  const overlay = document.getElementById("skeletonOverlay");
+  const body = document.body;
+  if (!body) return;
+
+  const toggle = () => {
+    if (active) {
+      body.classList.add("is-loading");
+      if (overlay) overlay.setAttribute("aria-hidden", "false");
+    } else {
+      if (overlay) overlay.setAttribute("aria-hidden", "true");
+      body.classList.remove("is-loading");
+    }
+  };
+
+  if (delay > 0) {
+    window.setTimeout(toggle, delay);
+  } else {
+    toggle();
   }
 }
 
@@ -292,6 +606,8 @@ function renderCategories(categories) {
   const empty = document.getElementById("categoriesEmpty");
   if (!grid) return;
 
+  categoryGalleryStore.clear();
+
   if (!Array.isArray(categories) || !categories.length) {
     grid.innerHTML = "";
     if (empty) empty.classList.remove("d-none");
@@ -300,15 +616,27 @@ function renderCategories(categories) {
 
   const cards = categories
     .map((category) => {
-      const images = Array.isArray(category.images) && category.images.length ? category.images : [
-        "https://res.cloudinary.com/demo/image/upload/v1690000000/solar-panels.jpg"
-      ];
-      const carouselId = `cat-${category.id || crypto.randomUUID()}`;
-      const carouselSlides = images
+      const catId = category.id || crypto.randomUUID();
+      const normalizedImages = normalizeCategoryImages(category);
+      if (!normalizedImages.length) {
+        normalizedImages.push({
+          url: fallbackData.branding.ogImage,
+          alt: category.name || "Gallery image",
+          caption: ""
+        });
+      }
+
+      categoryGalleryStore.set(String(catId), {
+        title: category.name || "Gallery",
+        images: normalizedImages
+      });
+
+      const carouselId = `cat-${catId}`;
+      const carouselSlides = normalizedImages
         .map((src, idx) => `
           <div class="carousel-item ${idx === 0 ? "active" : ""}">
             <div class="ratio ratio-16x9">
-              <img src="${src}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${category.name}">
+              <img src="${src.url}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${src.alt || category.name}">
             </div>
           </div>`)
         .join("");
@@ -323,7 +651,7 @@ function renderCategories(categories) {
               <h5 class="card-title mb-1">${category.name}</h5>
               <p class="card-text text-muted mb-0">${category.description || "Learn more about this solution."}</p>
               <div class="mt-3 d-flex gap-2 flex-wrap">
-                <a class="btn btn-outline-primary btn-sm" href="#projects"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
+                <button type="button" class="btn btn-outline-primary btn-sm btn-view-gallery" data-gallery-id="${catId}" data-bs-toggle="modal" data-bs-target="#categoryGalleryModal"><i class="fa-regular fa-images me-1"></i>View Gallery</button>
                 <a class="btn btn-accent btn-sm" href="#contact">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
               </div>
             </div>
@@ -338,61 +666,156 @@ function renderCategories(categories) {
 
 function renderProjects(projects) {
   const grid = document.getElementById("projectsGrid");
-  if (!grid) return;
+  const empty = document.getElementById("projectsEmpty");
+
+  projectStore.clear();
 
   if (!Array.isArray(projects) || !projects.length) {
-    grid.innerHTML = "<p class=\"text-muted\">Projects coming soon.</p>";
+    if (grid) {
+      grid.innerHTML = "";
+    }
+    if (empty) {
+      empty.classList.remove("d-none");
+    }
+    window.NASAM_PROJECT_STORE = projectStore;
+    document.dispatchEvent(new CustomEvent("nasam:projects-rendered", {
+      detail: {
+        projectIds: []
+      }
+    }));
     return;
   }
 
-  grid.innerHTML = projects
-    .map((project) => `
-      <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-          <div class="ratio ratio-4x3">
-            <img src="${project.image || fallbackData.projects[0].image}" class="w-100 h-100" style="object-fit:cover;" alt="${project.title}">
+  const cards = projects
+    .map((project, index) => {
+      const fallbackId = `project-${index + 1}`;
+      const projectId = String(project.id || project.slug || project.key || slugify(project.title, fallbackId));
+      const images = normalizeProjectImages(project);
+      const coverImage = images[0]?.url || fallbackData.projects[0].image;
+      const meta = buildProjectMeta(project);
+      const highlights = Array.isArray(project?.highlights)
+        ? project.highlights.filter(Boolean)
+        : project?.highlights
+          ? [project.highlights]
+          : [];
+      const description = project.longDescription || project.details || project.description || "Project details coming soon.";
+      const shortDescription = project.description || project.summary || "Project description coming soon.";
+      const subtitle = project.subtitle || project.tagline || project.sector || "";
+      const ctaText = project.ctaText || "Request a quote";
+      const ctaUrl = project.ctaUrl || "#contact";
+
+      projectStore.set(String(projectId), {
+        title: project.title || "Project",
+        description,
+        images,
+        meta,
+        highlights,
+        subtitle,
+        cta: {
+          text: ctaText,
+          url: ctaUrl
+        }
+      });
+
+      return `
+        <div class="col-md-4" id="project-card-${projectId}" data-project-id="${projectId}">
+          <div class="card h-100 shadow-sm">
+            <div class="ratio ratio-4x3">
+              <img src="${coverImage}" class="w-100 h-100" style="object-fit:cover;" alt="${project.title || "Project image"}">
+            </div>
+            <div class="card-body d-flex flex-column">
+              <div>
+                <h5 class="card-title">${project.title || "Project"}</h5>
+                <p class="card-text text-muted">${shortDescription}</p>
+              </div>
+              <div class="mt-3 d-flex gap-2 flex-wrap">
+                <a class="btn btn-outline-primary btn-sm" href="projects.html#project-${projectId}"><i class="fa-regular fa-folder-open me-1"></i>View Project</a>
+                <a class="btn btn-accent btn-sm" href="${ctaUrl}">${ctaText} <i class="fa-solid fa-arrow-right ms-1"></i></a>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <h5 class="card-title">${project.title}</h5>
-            <p class="card-text text-muted">${project.description || "Project description coming soon."}</p>
-          </div>
-        </div>
-      </div>`)
+        </div>`;
+    })
     .join("");
+
+  if (grid) {
+    grid.innerHTML = cards;
+  }
+  if (empty) {
+    empty.classList.add("d-none");
+  }
+  window.NASAM_PROJECT_STORE = projectStore;
+  renderProjectDetailSections();
+  document.dispatchEvent(new CustomEvent("nasam:projects-rendered", {
+    detail: {
+      projectIds: Array.from(projectStore.keys())
+    }
+  }));
 }
 
 function renderReviews(reviews) {
-  const carousel = document.querySelector("#testimonialsCarousel .carousel-inner");
-  if (!carousel) return;
+  const sanitized = Array.isArray(reviews) ? reviews.filter(Boolean) : [];
 
-  if (!Array.isArray(reviews) || !reviews.length) {
-    carousel.innerHTML = `
-      <div class="carousel-item active">
-        <div class="text-center py-4">
-          <p class="mb-0">No reviews yet. Be the first to share your experience!</p>
-        </div>
-      </div>`;
-    return;
+  const carousel = document.querySelector("#testimonialsCarousel .carousel-inner");
+  if (carousel) {
+    if (sanitized.length) {
+      const slidesHtml = sanitized.slice(0, 5).map((review, idx) => {
+        const starsCount = Math.max(0, Math.min(5, Number(review.rating) || 0));
+        const stars = new Array(starsCount).fill("<i class='fa-solid fa-star text-warning'></i>").join("") || "<i class='fa-solid fa-star text-warning'></i>".repeat(5);
+        return `
+          <div class="carousel-item ${idx === 0 ? "active" : ""}">
+            <div class="d-flex flex-column gap-3 align-items-center text-center">
+              <div class="d-flex align-items-center justify-content-center gap-3">
+                <div class="d-flex" aria-label="${review.rating || 5} out of 5 stars">${stars}</div>
+                ${review.category ? `<small class="text-muted">${review.category}</small>` : ""}
+              </div>
+              <blockquote class="mb-0">
+                <p class="lead mb-1">“${review.comment || review.message || ""}”</p>
+                <footer class="text-muted">${review.name || "Client"}</footer>
+              </blockquote>
+            </div>
+          </div>`;
+      }).join("");
+      carousel.innerHTML = slidesHtml;
+    } else {
+      carousel.innerHTML = "";
+    }
   }
 
-  carousel.innerHTML = reviews
-    .map((review, idx) => `
-      <div class="carousel-item ${idx === 0 ? "active" : ""}">
-        <div class="d-flex flex-column gap-3 align-items-center text-center">
-          <div class="d-flex align-items-center justify-content-center gap-3">
-            <div class="d-flex" aria-label="${review.rating || 5} out of 5 stars">
-              ${Array.from({ length: 5 }).map((_, starIdx) => `
-                <i class="fa-solid fa-star${starIdx < (review.rating || 5) ? " text-warning" : " text-secondary"}"></i>`).join("")}
-            </div>
-            <small class="text-muted">${review.category || "Client"}</small>
-          </div>
-          <blockquote class="mb-0">
-            <p class="lead mb-1">“${review.comment || "Great service!"}”</p>
-            <footer class="text-muted">${review.name || "Client"}</footer>
-          </blockquote>
-        </div>
-      </div>`)
-    .join("");
+  const container = document.getElementById("reviewsGrid");
+  const emptyEl = document.getElementById("reviewsEmpty");
+  if (container) {
+    if (sanitized.length) {
+      container.innerHTML = sanitized
+        .map((review) => {
+          const starsCount = Math.max(0, Math.min(5, Number(review.rating) || 0));
+          const stars = new Array(starsCount).fill("<i class='fa-solid fa-star'></i>").join("") || "<i class='fa-solid fa-star'></i>".repeat(5);
+          const badge = review.category ? `<span class="badge bg-primary-subtle text-primary"><i class="fa-solid fa-tag me-1"></i>${review.category}</span>` : "";
+          const meta = [review.project, review.location].filter(Boolean).join(" • ");
+          return `
+            <div class="col-md-6 col-lg-4">
+              <article class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <strong>${review.name || "Client"}</strong>
+                    ${badge}
+                  </div>
+                  <div class="text-warning mb-2" aria-label="${review.rating || 5} out of 5 stars">
+                    ${stars}
+                  </div>
+                  <p class="flex-grow-1">“${review.comment || review.message || ""}”</p>
+                  ${meta ? `<small class="text-muted">${meta}</small>` : ""}
+                </div>
+              </article>
+            </div>`;
+        })
+        .join("");
+      if (emptyEl) emptyEl.classList.add("d-none");
+    } else {
+      container.innerHTML = "";
+      if (emptyEl) emptyEl.classList.remove("d-none");
+    }
+  }
 }
 
 function applyContent(content) {
@@ -404,6 +827,192 @@ function applyContent(content) {
   renderReviews(content.reviews);
 }
 
+function setupCategoryGalleryModal() {
+  const modalEl = document.getElementById("categoryGalleryModal");
+  const carouselEl = document.getElementById("categoryGalleryCarousel");
+  if (!modalEl || !carouselEl) return;
+
+  const titleEl = modalEl.querySelector("#categoryGalleryTitle");
+  const indicatorsEl = carouselEl.querySelector(".carousel-indicators");
+  const innerEl = carouselEl.querySelector(".carousel-inner");
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".btn-view-gallery");
+    if (!trigger) return;
+
+    const galleryId = trigger.getAttribute("data-gallery-id");
+    const gallery = categoryGalleryStore.get(String(galleryId));
+    if (!gallery || !gallery.images.length || !innerEl) {
+      return;
+    }
+
+    if (titleEl) {
+      titleEl.textContent = gallery.title || "Gallery";
+    }
+
+    const slidesHtml = gallery.images
+      .map((img, idx) => `
+        <div class="carousel-item ${idx === 0 ? "active" : ""}">
+          <div class="ratio ratio-16x9">
+            <img src="${img.url}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${img.alt || gallery.title || "Gallery image"}">
+          </div>
+          ${img.caption ? `<div class="carousel-caption bg-dark bg-opacity-50 rounded-3 p-2">${img.caption}</div>` : ""}
+        </div>`)
+      .join("");
+
+    innerEl.innerHTML = slidesHtml;
+
+    if (indicatorsEl) {
+      if (gallery.images.length > 1) {
+        indicatorsEl.innerHTML = gallery.images
+          .map((_, idx) => `<button type="button" data-bs-target="#categoryGalleryCarousel" data-bs-slide-to="${idx}" ${idx === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${idx + 1}"></button>`)
+          .join("");
+        indicatorsEl.classList.remove("d-none");
+      } else {
+        indicatorsEl.innerHTML = "";
+        indicatorsEl.classList.add("d-none");
+      }
+    }
+
+    if (window.bootstrap && carouselEl) {
+      const instance = window.bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: 5000 });
+      instance.pause();
+      instance.to(0);
+    }
+  });
+}
+
+function setupProjectDetailsModal() {
+  const modalEl = document.getElementById("projectDetailsModal");
+  if (!modalEl) return;
+
+  const titleEl = modalEl.querySelector("#projectDetailsTitle");
+  const subtitleEl = modalEl.querySelector("#projectDetailsSubtitle");
+  const descriptionEl = modalEl.querySelector("#projectDetailsDescription");
+  const metaWrapper = modalEl.querySelector("#projectDetailsMetaWrapper");
+  const metaList = modalEl.querySelector("#projectDetailsMeta");
+  const highlightsWrapper = modalEl.querySelector("#projectDetailsHighlightsWrapper");
+  const highlightsList = modalEl.querySelector("#projectDetailsHighlights");
+  const ctaBtn = modalEl.querySelector("#projectDetailsCta");
+  const ctaLabel = modalEl.querySelector("#projectDetailsCtaLabel");
+  const carouselEl = modalEl.querySelector("#projectDetailsCarousel");
+  const indicatorsEl = carouselEl?.querySelector(".carousel-indicators") || null;
+  const innerEl = carouselEl?.querySelector(".carousel-inner") || null;
+  const controls = carouselEl ? Array.from(carouselEl.querySelectorAll(".carousel-control-prev, .carousel-control-next")) : [];
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".btn-view-project");
+    if (!trigger) return;
+
+    const projectId = trigger.getAttribute("data-project-id");
+    const projectData = projectStore.get(String(projectId));
+    if (!projectData) {
+      return;
+    }
+
+    const { title, subtitle, description, images, meta, highlights, cta } = projectData;
+
+    if (titleEl) {
+      titleEl.textContent = title || "Project";
+    }
+
+    if (subtitleEl) {
+      if (subtitle) {
+        subtitleEl.textContent = subtitle;
+        subtitleEl.classList.remove("d-none");
+      } else {
+        subtitleEl.textContent = "";
+        subtitleEl.classList.add("d-none");
+      }
+    }
+
+    if (descriptionEl) {
+      descriptionEl.textContent = description || "";
+    }
+
+    if (metaList) {
+      if (Array.isArray(meta) && meta.length) {
+        metaList.innerHTML = meta
+          .map((item) => `
+            <li class="border rounded-3 p-2">
+              <div class="text-muted small text-uppercase">${item.label}</div>
+              <div class="fw-semibold">${item.value}</div>
+            </li>`)
+          .join("");
+        metaWrapper?.classList.remove("d-none");
+      } else {
+        metaList.innerHTML = "";
+        metaWrapper?.classList.add("d-none");
+      }
+    }
+
+    if (highlightsList) {
+      if (Array.isArray(highlights) && highlights.length) {
+        highlightsList.innerHTML = highlights
+          .map((point) => `
+            <li class="d-flex align-items-start gap-2">
+              <i class="fa-solid fa-circle-check text-success mt-1"></i>
+              <span>${point}</span>
+            </li>`)
+          .join("");
+        highlightsWrapper?.classList.remove("d-none");
+      } else {
+        highlightsList.innerHTML = "";
+        highlightsWrapper?.classList.add("d-none");
+      }
+    }
+
+    if (ctaBtn) {
+      ctaBtn.setAttribute("href", cta?.url || "#contact");
+      if (ctaLabel) {
+        ctaLabel.textContent = cta?.text || "Request a quote";
+      } else {
+        ctaBtn.textContent = cta?.text || "Request a quote";
+      }
+    }
+
+    if (carouselEl && innerEl) {
+      const slidesHtml = (Array.isArray(images) && images.length ? images : normalizeProjectImages({ title, images: [] }))
+        .map((img, idx) => `
+          <div class="carousel-item ${idx === 0 ? "active" : ""}">
+            <div class="ratio ratio-16x9">
+              <img src="${img.url}" class="d-block w-100 h-100" style="object-fit:cover;" alt="${img.alt || title || "Project image"}">
+            </div>
+            ${img.caption ? `<div class="carousel-caption bg-dark bg-opacity-50 rounded-3 p-2">${img.caption}</div>` : ""}
+          </div>`)
+        .join("");
+
+      innerEl.innerHTML = slidesHtml;
+
+      if (indicatorsEl) {
+        if (images.length > 1) {
+          indicatorsEl.innerHTML = images
+            .map((_, idx) => `<button type="button" data-bs-target="#projectDetailsCarousel" data-bs-slide-to="${idx}" ${idx === 0 ? 'class="active" aria-current="true"' : ""} aria-label="Slide ${idx + 1}"></button>`)
+            .join("");
+          indicatorsEl.classList.remove("d-none");
+        } else {
+          indicatorsEl.innerHTML = "";
+          indicatorsEl.classList.add("d-none");
+        }
+      }
+
+      controls.forEach((control) => {
+        if (images.length > 1) {
+          control.classList.remove("d-none");
+        } else {
+          control.classList.add("d-none");
+        }
+      });
+
+      if (window.bootstrap) {
+        const carousel = window.bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: 5000 });
+        carousel.pause();
+        carousel.to(0);
+      }
+    }
+  });
+}
+
 async function fetchFirebaseContent(firebaseConfig) {
   if (!firebaseConfig) {
     console.warn("Firebase config not provided. Using fallback content.");
@@ -411,8 +1020,9 @@ async function fetchFirebaseContent(firebaseConfig) {
   }
 
   try {
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebaseConfigCache = firebaseConfigCache || firebaseConfig;
+    const db = ensureFirebase(firebaseConfig);
+    if (!db) return null;
 
     const [companyDoc, brandingDoc, heroDoc, heroPhotosSnap, categoriesSnap, projectsSnap, reviewsSnap] = await Promise.all([
       getDoc(doc(db, "siteContent", "company")),
@@ -448,20 +1058,59 @@ async function fetchFirebaseContent(firebaseConfig) {
 }
 
 async function bootstrap() {
+  setSkeletonLoading(true);
   const firebaseConfig = window.NASAM_FIREBASE_CONFIG || window.FIREBASE_CONFIG || null;
   const preloadedContent = window.NASAM_CONTENT || null;
 
+  if (firebaseConfig) {
+    ensureFirebase(firebaseConfig);
+  }
+
   if (preloadedContent) {
     applyContent({ ...fallbackData, ...preloadedContent });
+    setSkeletonLoading(false, { delay: 180 });
     return;
   }
 
   const remoteContent = await fetchFirebaseContent(firebaseConfig);
   if (remoteContent) {
     applyContent({ ...fallbackData, ...remoteContent });
+    setSkeletonLoading(false, { delay: 200 });
   } else {
     applyContent(fallbackData);
+    setSkeletonLoading(false, { delay: 220 });
   }
 }
 
-document.addEventListener("DOMContentLoaded", bootstrap);
+document.addEventListener("DOMContentLoaded", () => {
+  setupCategoryGalleryModal();
+  setupProjectDetailsModal();
+  bootstrap();
+});
+
+window.focusProjectFromHash = focusProjectFromHash;
+
+async function submitReviewToFirebase(payload = {}) {
+  const config = firebaseConfigCache || window.NASAM_FIREBASE_CONFIG || window.FIREBASE_CONFIG || null;
+  const db = ensureFirebase(config);
+  if (!db) {
+    throw new Error("Firebase configuration unavailable.");
+  }
+
+  const reviewDoc = {
+    name: (payload.name || "").trim(),
+    category: (payload.category || "").trim(),
+    comment: (payload.comment || "").trim(),
+    rating: Number(payload.rating) || 0,
+    permission: payload.permission || "internal",
+    email: (payload.email || "").trim(),
+    project: (payload.project || "").trim(),
+    approved: false,
+    source: "website",
+    createdAt: serverTimestamp()
+  };
+
+  return addDoc(collection(db, "reviews"), reviewDoc);
+}
+
+window.NASAM_submitReview = submitReviewToFirebase;

@@ -29,9 +29,89 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css?v=1">
 </head>
-<body>
+<body class="is-loading">
   <div id="scrollProgress" aria-hidden="true"></div>
   <a href="#main" class="skip-link">Skip to content</a>
+
+  <div id="skeletonOverlay" class="skeleton-overlay" aria-hidden="false" role="status" aria-live="polite">
+    <div class="container skeleton-stack">
+      <div class="skeleton-row">
+        <div class="skeleton-card">
+          <div class="skeleton-badge" style="width: 160px;"></div>
+          <div class="skeleton-bar-lg skeleton-gap-sm" style="width: 320px;"></div>
+          <div class="skeleton-bar-lg" style="width: 280px;"></div>
+          <div class="skeleton-bar skeleton-gap-md" style="width: 85%;"></div>
+          <div class="skeleton-row skeleton-gap-md" style="gap: .75rem;">
+            <div class="skeleton-pill" style="width: 180px;"></div>
+            <div class="skeleton-pill" style="width: 160px;"></div>
+            <div class="skeleton-pill" style="width: 140px;"></div>
+          </div>
+        </div>
+        <div class="skeleton-card" style="flex: 0 0 320px;">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar" style="width: 80%;"></div>
+          <div class="skeleton-bar-sm" style="width: 60%;"></div>
+        </div>
+      </div>
+
+      <div class="skeleton-card">
+        <div class="skeleton-bar-lg" style="width: 220px;"></div>
+        <div class="skeleton-bar" style="width: 65%;"></div>
+        <div class="skeleton-bar-sm" style="width: 45%;"></div>
+      </div>
+
+      <div class="skeleton-row">
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 70%;"></div>
+          <div class="skeleton-bar" style="width: 90%;"></div>
+          <div class="skeleton-pill skeleton-gap-sm" style="width: 60%;"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 65%;"></div>
+          <div class="skeleton-bar" style="width: 88%;"></div>
+          <div class="skeleton-pill skeleton-gap-sm" style="width: 55%;"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 68%;"></div>
+          <div class="skeleton-bar" style="width: 86%;"></div>
+          <div class="skeleton-pill skeleton-gap-sm" style="width: 58%;"></div>
+        </div>
+      </div>
+
+      <div class="skeleton-card">
+        <div class="skeleton-bar-lg" style="width: 240px;"></div>
+        <div class="skeleton-bar" style="width: 75%;"></div>
+        <div class="skeleton-bar" style="width: 55%;"></div>
+      </div>
+
+      <div class="skeleton-row">
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 72%;"></div>
+          <div class="skeleton-bar" style="width: 64%;"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 66%;"></div>
+          <div class="skeleton-bar" style="width: 60%;"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-media"></div>
+          <div class="skeleton-bar-lg" style="width: 68%;"></div>
+          <div class="skeleton-bar" style="width: 62%;"></div>
+        </div>
+      </div>
+
+      <div class="skeleton-card">
+        <div class="skeleton-bar-lg" style="width: 210px;"></div>
+        <div class="skeleton-bar" style="width: 70%;"></div>
+        <div class="skeleton-bar-sm" style="width: 40%;"></div>
+      </div>
+    </div>
+  </div>
 
   <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top blur-nav" role="navigation" aria-label="Primary">
     <div class="container">
@@ -56,9 +136,10 @@
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
           <li class="nav-item"><a class="nav-link active" href="#hero" aria-current="page">Home</a></li>
           <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
-          <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+          <li class="nav-item"><a class="nav-link" href="projects.html">Projects</a></li>
+          <li class="nav-item"><a class="nav-link" href="reviews.html">Reviews</a></li>
           <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-          <li class="nav-item"><a class="btn btn-accent ms-lg-2" href="#contact">Contact</a></li>
+          <li class="nav-item"><a class="btn btn-accent ms-lg-2" href="contacts.html">Contact</a></li>
           <li class="nav-item dropdown ms-lg-2">
             <button id="themeToggle" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-pressed="false" aria-label="Theme options">
               <i class="fa-solid fa-moon"></i>
@@ -75,7 +156,7 @@
     </div>
   </nav>
 
-  <main id="main" tabindex="-1">
+  <main id="main" tabindex="-1" class="data-skeleton-target">
     <section id="hero" class="hero gradient-blue text-white py-5">
       <div class="container py-4">
         <div class="row align-items-center g-4">
@@ -170,7 +251,7 @@
                 <h5 class="card-title mb-1">Solar PV Systems</h5>
                 <p class="card-text text-muted mb-0">Design, installation, and maintenance of hybrid and grid-tied solar plants.</p>
                 <div class="mt-3 d-flex gap-2 flex-wrap">
-                  <a class="btn btn-outline-primary btn-sm" href="#projects"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
+                  <button type="button" class="btn btn-outline-primary btn-sm btn-view-gallery" data-gallery-id="solar" data-bs-toggle="modal" data-bs-target="#categoryGalleryModal"><i class="fa-regular fa-images me-1"></i>View Gallery</button>
                   <a class="btn btn-accent btn-sm" href="#contact">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -185,7 +266,7 @@
                 <h5 class="card-title mb-1">Electrical Installations</h5>
                 <p class="card-text text-muted mb-0">Turnkey electrical contracting for commercial, industrial, and residential projects.</p>
                 <div class="mt-3 d-flex gap-2 flex-wrap">
-                  <a class="btn btn-outline-primary btn-sm" href="#projects"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
+                  <button type="button" class="btn btn-outline-primary btn-sm btn-view-gallery" data-gallery-id="electrical" data-bs-toggle="modal" data-bs-target="#categoryGalleryModal"><i class="fa-regular fa-images me-1"></i>View Gallery</button>
                   <a class="btn btn-accent btn-sm" href="#contact">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -200,7 +281,7 @@
                 <h5 class="card-title mb-1">Security &amp; Surveillance</h5>
                 <p class="card-text text-muted mb-0">Integrated CCTV, access control, and smart monitoring solutions.</p>
                 <div class="mt-3 d-flex gap-2 flex-wrap">
-                  <a class="btn btn-outline-primary btn-sm" href="#projects"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
+                  <button type="button" class="btn btn-outline-primary btn-sm btn-view-gallery" data-gallery-id="security" data-bs-toggle="modal" data-bs-target="#categoryGalleryModal"><i class="fa-regular fa-images me-1"></i>View Gallery</button>
                   <a class="btn btn-accent btn-sm" href="#contact">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
                 </div>
               </div>
@@ -333,7 +414,7 @@
             </button>
           </div>
           <div class="text-center mt-4">
-            <a class="btn btn-primary" href="#contact"><i class="fa-solid fa-star me-1"></i>Rate our services</a>
+            <a class="btn btn-primary" href="reviews.html"><i class="fa-solid fa-star me-1"></i>Rate our services</a>
           </div>
         </div>
       </div>
@@ -456,15 +537,17 @@
               <li><a href="#hero">Home</a></li>
               <li><a href="#services">Services</a></li>
               <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li><a href="contacts.html">Contact</a></li>
             </ul>
           </div>
           <div class="col-6 col-md-2">
             <div class="footer-title">Resources</div>
             <ul class="list-unstyled mb-0 footer-links">
-              <li><a href="#projects">Projects</a></li>
-              <li><a href="#certifications">Certifications</a></li>
-              <li><a href="#faq">FAQ</a></li>
+              <li><a href="projects.html">Projects</a></li>
+              <li><a href="certifications.html">Certifications</a></li>
+              <li><a href="faq.html">FAQs</a></li>
+              <li><a href="reviews.html">Reviews</a></li>
+              <li><a href="privacy.html">Privacy Policy</a></li>
             </ul>
           </div>
           <div class="col-6 col-md-3">
@@ -473,7 +556,7 @@
               <li><i class="fa-solid fa-envelope me-2"></i><a data-company-email-link href="mailto:info@nasam.co.ke" data-company-email>info@nasam.co.ke</a></li>
               <li><i class="fa-solid fa-phone me-2"></i><span data-company-phones>+254 722 52 17 52, +254 722 31 92 92</span></li>
             </ul>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap justify-content-center justify-content-md-start contact-buttons">
               <a href="tel:+254722319292" class="btn btn-outline-light btn-sm" data-company-phone-link><i class="fa-solid fa-phone me-1"></i>Call</a>
               <a data-company-whatsapp-link href="https://wa.me/254722319292" class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp me-1"></i>WhatsApp</a>
             </div>
@@ -493,8 +576,10 @@
       <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small opacity-85">
         <div>© <span id="footerYear"></span> <span data-company-field="name">NASAM HI-TECH ELECTRICALS</span>. All rights reserved.</div>
         <div class="d-flex gap-3">
-          <a href="#privacy" class="footer-legal">Privacy</a>
-          <a href="#terms" class="footer-legal">Terms</a>
+          <a href="privacy.html" class="footer-legal">Privacy</a>
+          <a href="terms.html" class="footer-legal">Terms</a>
+          <a href="faq.html" class="footer-legal">FAQs</a>
+          <a href="certifications.html" class="footer-legal">Certifications</a>
         </div>
       </div>
     </div>
@@ -516,6 +601,37 @@
       <div class="d-flex gap-2">
         <button id="cookieAccept" class="btn btn-accent btn-sm">Accept</button>
         <button id="cookieDecline" class="btn btn-outline-light btn-sm">Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="categoryGalleryModal" tabindex="-1" aria-labelledby="categoryGalleryTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoryGalleryTitle">Gallery</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="categoryGalleryCarousel" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-indicators d-none"></div>
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <div class="ratio ratio-16x9">
+                  <img src="assets/img/logo-placeholder.svg" class="d-block w-100 h-100" style="object-fit:cover;" alt="Gallery placeholder">
+                </div>
+              </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#categoryGalleryCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#categoryGalleryCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -544,7 +660,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe later</button>
-          <a href="#contact" class="btn btn-accent">Rate now</a>
+          <a href="review-submit.html" class="btn btn-accent">Rate now</a>
         </div>
       </div>
     </div>
@@ -562,7 +678,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Not now</button>
-          <a href="#contact" class="btn btn-primary">Contact us</a>
+          <a href="contacts.html" class="btn btn-primary">Contact us</a>
         </div>
       </div>
     </div>
