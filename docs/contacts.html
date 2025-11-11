@@ -54,6 +54,8 @@
                data-theme-src-light="assets/img/logo-placeholder.svg"
                data-theme-src-dark="assets/img/logo-placeholder.svg"
                alt="NASAM HI-TECH ELECTRICALS Logo"
+               loading="lazy"
+               decoding="async"
                class="brand-icon-img">
         </span>
         <div class="d-flex flex-column lh-1">
@@ -245,11 +247,13 @@
           <div class="col-md-4">
             <div class="d-flex align-items-center mb-2">
               <img id="footerLogo"
-                   src="assets/img/logo-placeholder.svg"
-                   data-theme-src-light="assets/img/logo-placeholder.svg"
-                   data-theme-src-dark="assets/img/logo-placeholder.svg"
-                   alt="NASAM HI-TECH ELECTRICALS logo"
-                   style="height:40px" class="me-2">
+               src="assets/img/logo-placeholder.svg"
+               data-theme-src-light="assets/img/logo-placeholder.svg"
+               data-theme-src-dark="assets/img/logo-placeholder.svg"
+               alt="NASAM HI-TECH ELECTRICALS logo"
+               loading="lazy"
+               decoding="async"
+               style="height:40px" class="me-2">
               <div class="fw-bold" data-company-field="name">NASAM HI-TECH ELECTRICALS</div>
             </div>
             <p class="mb-3 small opacity-85" data-company-field="tagline">Electrical Contractor</p>
@@ -340,22 +344,53 @@
 
       const form = document.getElementById('generalContactForm');
       const status = document.getElementById('contactFormStatus');
-      if(form){
-        form.addEventListener('submit', (event) => {
+      const submitBtn = form?.querySelector('button[type="submit"]');
+
+      const setStatus = (message, variant = 'muted') => {
+        if (!status) return;
+        status.textContent = message;
+        status.classList.remove('text-danger', 'text-success', 'text-muted');
+        status.classList.add(`text-${variant}`);
+      };
+
+      if (form) {
+        form.addEventListener('submit', async (event) => {
           event.preventDefault();
           event.stopPropagation();
           form.classList.add('was-validated');
-          if(!form.checkValidity()){
-            status.textContent = 'Please correct the highlighted fields.';
-            status.classList.remove('text-success');
-            status.classList.add('text-danger');
+
+          if (!form.checkValidity()) {
+            setStatus('Please correct the highlighted fields.', 'danger');
             return;
           }
-          status.textContent = 'Thank you! Our team will reach out shortly.';
-          status.classList.remove('text-danger');
-          status.classList.add('text-success');
-          form.reset();
-          form.classList.remove('was-validated');
+
+          setStatus('Sending your inquiry…', 'muted');
+          if (submitBtn) submitBtn.disabled = true;
+
+          try {
+            const submitContact = window.NASAM_submitContact;
+            if (typeof submitContact !== 'function') {
+              throw new Error('Contact submission helper is unavailable.');
+            }
+
+            await submitContact({
+              name: form.contactName.value,
+              email: form.contactEmail.value,
+              phone: form.contactPhone.value,
+              projectType: form.projectType.value,
+              message: form.contactMessage.value,
+              source: 'website-contact-form'
+            });
+
+            setStatus('Thank you! Our team will reach out shortly.', 'success');
+            form.reset();
+            form.classList.remove('was-validated');
+          } catch (error) {
+            console.error('Failed to submit contact inquiry', error);
+            setStatus('We could not send your message. Please try again shortly.', 'danger');
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+          }
         });
       }
     });

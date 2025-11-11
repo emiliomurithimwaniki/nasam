@@ -64,6 +64,99 @@
   });
 })();
 
+// Highlight active nav link based on current location
+(function(){
+  const navLinks = Array.from(document.querySelectorAll('#nav .nav-link')).filter(link=> !link.classList.contains('btn'));
+  if(!navLinks.length) return;
+
+  const trimPath = (pathname)=>{
+    if(!pathname) return '/';
+    let path = pathname.replace(/\\/g,'/');
+    path = path.replace(/index\.html$/i,'');
+    if(path.length > 1 && path.endsWith('/')){
+      path = path.slice(0, -1);
+    }
+    return path || '/';
+  };
+
+  const updateActive = ()=>{
+    const currentUrl = new URL(window.location.href);
+    const curPath = trimPath(currentUrl.pathname);
+    const curHash = currentUrl.hash;
+    let best = null;
+
+    navLinks.forEach(link=>{
+      const href = link.getAttribute('href');
+      if(!href) return;
+      const targetUrl = new URL(href, window.location.href);
+      const linkPath = trimPath(targetUrl.pathname);
+      const linkHash = targetUrl.hash;
+      let score = 0;
+
+      if(linkPath === curPath){
+        score += 4;
+        if(linkHash){
+          if(curHash && curHash === linkHash){
+            score += 6;
+          }else if(!curHash && (linkHash === '#hero' || linkHash === '#top')){
+            score += 2;
+          }
+        }else if(!curHash){
+          score += 2;
+        }
+      }
+
+      if(score > 0 && (!best || score > best.score)){
+        best = {link, score};
+      }
+    });
+
+    navLinks.forEach(link=>{
+      link.classList.remove('active');
+      if(link.hasAttribute('aria-current')){
+        link.removeAttribute('aria-current');
+      }
+    });
+
+    if(best){
+      best.link.classList.add('active');
+      best.link.setAttribute('aria-current','page');
+    }
+  };
+
+  updateActive();
+  window.addEventListener('hashchange', updateActive);
+  window.addEventListener('popstate', updateActive);
+})();
+
+// Inject developer credit banner below footer
+(function(){
+  const footer = document.querySelector('.site-footer');
+  if(!footer || document.querySelector('.developer-credit')) return;
+
+  const whatsappNumber = '254796031071';
+  const whatsappText = encodeURIComponent("Hello Emitech, I'm interested in getting a website like the NASAM HI-TECH ELECTRICALS site. Let's discuss!");
+  const emailSubject = encodeURIComponent('Website Inquiry - NASAM HI-TECH ELECTRICALS');
+  const emailBody = encodeURIComponent("Hello Emitech,\n\nI'd love to get a website similar to the NASAM HI-TECH ELECTRICALS site. Please let me know the next steps.\n\nThank you!");
+
+  const section = document.createElement('section');
+  section.className = 'developer-credit';
+  section.setAttribute('aria-label','Website developer credit');
+  section.innerHTML = `
+    <div class="container">
+      <div class="credit-text">
+        <span>Website developed by <strong>Emitech</strong>. Get yours here.</span>
+        <div class="credit-actions">
+          <a class="btn btn-whatsapp" href="https://wa.me/${whatsappNumber}?text=${whatsappText}" target="_blank" rel="noopener">Chat on WhatsApp</a>
+          <a class="btn btn-outline-primary" href="mailto:emiliomurithi4@gmail.com?subject=${emailSubject}&body=${emailBody}">Email Emitech</a>
+        </div>
+        <div class="small credit-contact">Call/WhatsApp: <a href="tel:0796031071">0796031071</a> · Email: <a href="mailto:emiliomurithi4@gmail.com?subject=${emailSubject}&body=${emailBody}">emiliomurithi4@gmail.com</a></div>
+      </div>
+    </div>`;
+
+  footer.insertAdjacentElement('afterend', section);
+})();
+
 // Image lightbox via Bootstrap modal
 (function(){
   const init = ()=>{
@@ -649,11 +742,34 @@
 // Universal lazy loading for images, iframes, and background images
 (function(){
   const supportsIO = 'IntersectionObserver' in window;
+  const PLACEHOLDER_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+  const autoHydrateLazyImage = (img)=>{
+    if(img.dataset.src || img.dataset.srcset) return;
+    if(img.hasAttribute('data-priority')) return;
+    if(img.classList.contains('brand-icon-img') || img.classList.contains('no-lazy')) return;
+    const currentSrc = img.getAttribute('src');
+    const currentSrcset = img.getAttribute('srcset');
+    if(!currentSrc && !currentSrcset) return;
+    if(currentSrc && currentSrc.startsWith('data:') && !currentSrcset) return;
+    if(currentSrc){
+      img.setAttribute('data-src', currentSrc);
+    }
+    if(currentSrcset){
+      img.setAttribute('data-srcset', currentSrcset);
+      img.removeAttribute('srcset');
+    }
+    const placeholder = img.getAttribute('data-placeholder') || PLACEHOLDER_PIXEL;
+    if(currentSrc !== placeholder && placeholder){
+      img.setAttribute('src', placeholder);
+    }
+  };
 
   // Ensure passive lazy behavior on standard images/iframes
   document.querySelectorAll('img:not(.no-lazy)').forEach(img=>{
     if(!img.hasAttribute('loading')) img.setAttribute('loading','lazy');
     if(!img.hasAttribute('decoding')) img.setAttribute('decoding','async');
+    if(img.getAttribute('loading') === 'lazy') autoHydrateLazyImage(img);
   });
   document.querySelectorAll('iframe:not(.no-lazy)').forEach(fr=>{
     if(!fr.hasAttribute('loading')) fr.setAttribute('loading','lazy');

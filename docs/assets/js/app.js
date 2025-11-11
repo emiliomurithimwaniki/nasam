@@ -173,6 +173,8 @@ const projectStore = new Map();
 let firebaseAppInstance = null;
 let firestoreDbInstance = null;
 let firebaseConfigCache = null;
+let lazySectionObserver = null;
+let lazySectionMutationObserver = null;
 
 function ensureFirebase(config) {
   if (!config) return null;
@@ -297,6 +299,86 @@ function focusProjectFromHash(options = { behavior: "smooth" }) {
   }
   target.classList.add("project-scroll-highlight");
   window.setTimeout(() => target.classList.remove("project-scroll-highlight"), 2000);
+}
+
+function getLazySectionObserver() {
+  if (lazySectionObserver || typeof window === "undefined") {
+    return lazySectionObserver;
+  }
+  if (!("IntersectionObserver" in window)) {
+    return null;
+  }
+
+  lazySectionObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting || entry.intersectionRatio > 0) {
+        entry.target.classList.add("lazy-section-visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    rootMargin: "0px 0px -10% 0px",
+    threshold: 0.15
+  });
+
+  return lazySectionObserver;
+}
+
+function registerLazySection(section) {
+  if (!section || section.dataset.lazy === "off" || section.dataset.lazy === "disabled") {
+    return;
+  }
+
+  section.classList.add("lazy-section");
+
+  if (section.classList.contains("lazy-section-visible")) {
+    return;
+  }
+
+  const observer = getLazySectionObserver();
+  if (!observer) {
+    section.classList.add("lazy-section-visible");
+    return;
+  }
+
+  observer.observe(section);
+}
+
+function observeDomForLazySections() {
+  if (lazySectionMutationObserver || typeof window === "undefined" || !("MutationObserver" in window)) {
+    return;
+  }
+
+  lazySectionMutationObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        if (node.tagName === "SECTION") {
+          registerLazySection(node);
+        } else {
+          node.querySelectorAll?.("section").forEach((section) => registerLazySection(section));
+        }
+      });
+    });
+  });
+
+  lazySectionMutationObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+function initLazySections() {
+  if (typeof document === "undefined") return;
+
+  const sections = Array.from(document.querySelectorAll("section"));
+  if (!sections.length) return;
+
+  sections.forEach(registerLazySection);
+
+  if (!("IntersectionObserver" in window)) {
+    sections.forEach((section) => section.classList.add("lazy-section-visible"));
+    return;
+  }
+
+  observeDomForLazySections();
 }
 
 function normalizeCategoryImages(category) {
@@ -746,6 +828,7 @@ function renderProjects(projects) {
   }
   window.NASAM_PROJECT_STORE = projectStore;
   renderProjectDetailSections();
+  initLazySections();
   document.dispatchEvent(new CustomEvent("nasam:projects-rendered", {
     detail: {
       projectIds: Array.from(projectStore.keys())
@@ -784,6 +867,7 @@ function renderReviews(reviews) {
 
   const container = document.getElementById("reviewsGrid");
   const emptyEl = document.getElementById("reviewsEmpty");
+  const shoutOutList = document.querySelector("[data-reviews-shoutouts]");
   if (container) {
     if (sanitized.length) {
       container.innerHTML = sanitized
@@ -816,6 +900,45 @@ function renderReviews(reviews) {
       if (emptyEl) emptyEl.classList.remove("d-none");
     }
   }
+
+  if (shoutOutList) {
+    shoutOutList.innerHTML = "";
+    const latest = sanitized
+      .sort((a, b) => {
+        const aTs = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+        const bTs = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+        return bTs - aTs;
+      })
+      .slice(0, 3);
+
+    if (latest.length) {
+      shoutOutList.innerHTML = latest
+        .map((review) => {
+          const time = review.createdAt?.toDate ? review.createdAt.toDate() : (review.createdAt?.seconds ? new Date(review.createdAt.seconds * 1000) : null);
+          const formattedDate = time ? time.toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "";
+          const metaParts = [formattedDate, review.category, review.project, review.location].filter(Boolean);
+          return `
+            <div class="timeline-item mb-4">
+              <div class="timeline-marker bg-primary"></div>
+              <div class="timeline-content">
+                <strong>${review.name || "Client"}</strong>
+                <p class="mb-1 small text-muted">“${review.comment || review.message || ""}”</p>
+                ${metaParts.length ? `<small class="text-muted">${metaParts.join(" • ")}</small>` : ""}
+              </div>
+            </div>`;
+        })
+        .join("");
+    } else {
+      shoutOutList.innerHTML = `
+        <div class="timeline-item">
+          <div class="timeline-marker bg-primary"></div>
+          <div class="timeline-content">
+            <strong>Be the first to share!</strong>
+            <p class="mb-1 small text-muted">Submit a review and we&#39;ll feature highlights here.</p>
+          </div>
+        </div>`;
+    }
+  }
 }
 
 function applyContent(content) {
@@ -825,6 +948,7 @@ function applyContent(content) {
   renderCategories(content.categories);
   renderProjects(content.projects);
   renderReviews(content.reviews);
+  initLazySections();
 }
 
 function setupCategoryGalleryModal() {
@@ -1085,6 +1209,7 @@ async function bootstrap() {
 document.addEventListener("DOMContentLoaded", () => {
   setupCategoryGalleryModal();
   setupProjectDetailsModal();
+  initLazySections();
   bootstrap();
 });
 
@@ -1114,3 +1239,27 @@ async function submitReviewToFirebase(payload = {}) {
 }
 
 window.NASAM_submitReview = submitReviewToFirebase;
+
+async function submitContactInquiryToFirebase(payload = {}) {
+  const config = firebaseConfigCache || window.NASAM_FIREBASE_CONFIG || window.FIREBASE_CONFIG || null;
+  const db = ensureFirebase(config);
+  if (!db) {
+    throw new Error("Firebase configuration unavailable.");
+  }
+
+  const inquiryDoc = {
+    name: (payload.name || "").trim(),
+    email: (payload.email || "").trim(),
+    phone: (payload.phone || "").trim(),
+    projectType: (payload.projectType || "").trim(),
+    message: (payload.message || "").trim(),
+    company: (payload.company || "").trim(),
+    source: payload.source || "website-contact-form",
+    status: payload.status || "new",
+    createdAt: serverTimestamp()
+  };
+
+  return addDoc(collection(db, "contactMessages"), inquiryDoc);
+}
+
+window.NASAM_submitContact = submitContactInquiryToFirebase;

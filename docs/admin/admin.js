@@ -140,6 +140,30 @@ const toTextarea = (arr) => Array.isArray(arr) ? arr.join('\n') : '';
 
 const safe = (v, d='') => (v == null ? d : v);
 
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const toDate = (value) => {
+  if (!value) return null;
+  if (value.toDate instanceof Function) return value.toDate();
+  if (typeof value === 'object' && typeof value.seconds === 'number') {
+    const milliseconds = (value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1e6);
+    return new Date(milliseconds);
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatTimestamp = (value) => {
+  const date = toDate(value);
+  if (!date) return '—';
+  return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+};
+
 // Cloudinary unsigned upload (optional)
 async function cloudinaryUpload(file) {
   if (!file) throw new Error('No file');
@@ -196,6 +220,7 @@ async function renderSection(key) {
   if (key === 'categories') return renderCategories();
   if (key === 'projects') return renderProjects();
   if (key === 'reviews') return renderReviews();
+  if (key === 'contact-messages') return renderContactMessages();
   els.viewTitle.textContent = 'Unknown';
   els.view.innerHTML = '<div class="text-muted">Select a section.</div>';
 }
@@ -617,6 +642,142 @@ async function confirmDelete(col, id, onDone) {
   } catch (err) {
     alert('Delete failed: ' + (err?.message || err));
   }
+}
+
+// --- Contact messages ---
+async function renderContactMessages() {
+  els.viewTitle.textContent = 'Contact Messages';
+  let list = [];
+  try {
+    list = await listCollectionOrdered('contactMessages', 'createdAt', false, 200);
+  } catch (err) {
+    console.error('Failed to load ordered contact messages', err);
+    try {
+      list = await listCollection('contactMessages');
+    } catch (fallbackErr) {
+      console.error('Failed to load contact messages', fallbackErr);
+    }
+  }
+
+  const stats = list.reduce((acc, item) => {
+    const status = String(item.status || 'new').toLowerCase();
+    acc.total += 1;
+    if (status === 'resolved') acc.resolved += 1;
+    else if (status === 'in-progress') acc.inProgress += 1;
+    else acc.newCount += 1;
+    return acc;
+  }, { total: 0, newCount: 0, inProgress: 0, resolved: 0 });
+
+  els.viewActions.innerHTML = `
+    <span class="badge bg-primary-subtle text-primary">Total: ${stats.total}</span>
+    <span class="badge bg-warning-subtle text-warning">New: ${stats.newCount}</span>
+    <span class="badge bg-info-subtle text-info">In progress: ${stats.inProgress}</span>
+    <span class="badge bg-success-subtle text-success">Resolved: ${stats.resolved}</span>
+  `;
+
+  if (!list.length) {
+    els.view.innerHTML = '<div class="text-center text-muted py-5">No contact inquiries yet.</div>';
+    return;
+  }
+
+  els.view.innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Sender</th>
+            <th scope="col">Project Type</th>
+            <th scope="col">Message</th>
+            <th scope="col" style="width:140px">Status</th>
+            <th scope="col">Received</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cmBody"></tbody>
+      </table>
+    </div>`;
+
+  const tbody = q('#cmBody');
+  tbody.innerHTML = list.map((item) => {
+    const status = String(item.status || 'new').toLowerCase();
+    const messageHtml = escapeHtml(item.message || '').replace(/\n/g, '<br>');
+    const email = escapeHtml(item.email || '');
+    const phone = escapeHtml(item.phone || '');
+    const source = escapeHtml(item.source || 'website-contact-form');
+    return `
+      <tr data-id="${item.id}" data-email="${email}" data-phone="${phone}">
+        <td>
+          <div class="fw-semibold">${escapeHtml(safe(item.name, 'Client'))}</div>
+          ${email ? `<div class="small text-muted"><i class="fa-regular fa-envelope me-1"></i>${email}</div>` : ''}
+          ${phone ? `<div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>${phone}</div>` : ''}
+          <div class="small text-muted"><i class="fa-solid fa-link me-1"></i>${source}</div>
+        </td>
+        <td>${escapeHtml(safe(item.projectType, '—'))}</td>
+        <td><div class="small text-muted" style="white-space:pre-line">${messageHtml}</div></td>
+        <td>
+          <select class="form-select form-select-sm" data-act="status">
+            <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
+            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>In progress</option>
+            <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>Resolved</option>
+          </select>
+        </td>
+        <td>${formatTimestamp(item.createdAt)}</td>
+        <td class="text-end">
+          <button class="icon-btn" data-act="copy-email" title="Copy email"><i class="fa-regular fa-envelope"></i></button>
+          <button class="icon-btn" data-act="copy-phone" title="Copy phone"><i class="fa-solid fa-phone"></i></button>
+          <button class="icon-btn text-danger" data-act="del" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  tbody.addEventListener('change', async (e) => {
+    const select = e.target.closest('select[data-act="status"]');
+    if (!select) return;
+    const tr = select.closest('tr');
+    const id = tr?.dataset?.id;
+    if (!id) return;
+    const value = select.value;
+    try {
+      await updateDoc(doc(db, 'contactMessages', id), { status: value });
+      renderContactMessages();
+    } catch (err) {
+      alert('Update failed: ' + (err?.message || err));
+      renderContactMessages();
+    }
+  });
+
+  tbody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const tr = btn.closest('tr');
+    const id = tr?.dataset?.id;
+    if (!id) return;
+    if (btn.dataset.act === 'del') {
+      return confirmDelete('contactMessages', id, () => renderContactMessages());
+    }
+    if (btn.dataset.act === 'copy-email') {
+      const emailVal = tr.dataset.email;
+      if (!emailVal) return;
+      try {
+        await navigator.clipboard.writeText(emailVal);
+        btn.classList.add('text-success');
+        setTimeout(() => btn.classList.remove('text-success'), 800);
+      } catch (err) {
+        alert('Copy failed: ' + (err?.message || err));
+      }
+    }
+    if (btn.dataset.act === 'copy-phone') {
+      const phoneVal = tr.dataset.phone;
+      if (!phoneVal) return;
+      try {
+        await navigator.clipboard.writeText(phoneVal);
+        btn.classList.add('text-success');
+        setTimeout(() => btn.classList.remove('text-success'), 800);
+      } catch (err) {
+        alert('Copy failed: ' + (err?.message || err));
+      }
+    }
+  });
 }
 
 // --- Categories ---
