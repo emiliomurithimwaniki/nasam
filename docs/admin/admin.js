@@ -936,11 +936,11 @@ async function renderProjects() {
           <div class="card-body">
             <h3 class="h6">Add / Edit Project</h3>
             <div class="row g-3">
-              <div class="col-md-6">
+              <div class="col-md-6 col-xl-5">
                 <label class="form-label">Title</label>
                 <input type="text" class="form-control" id="prTitle">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-3 col-xl-2">
                 <label class="form-label">Order</label>
                 <input type="number" class="form-control" id="prOrder" value="0">
               </div>
@@ -948,12 +948,18 @@ async function renderProjects() {
                 <label class="form-label">Description</label>
                 <textarea class="form-control" id="prDesc" rows="2"></textarea>
               </div>
-              <div class="col-12">
-                <label class="form-label">Image URL</label>
-                <div class="input-group">
-                  <input type="url" class="form-control" id="prImg" placeholder="https://...">
-                  <button class="btn btn-outline-secondary" type="button" id="prUpload">Upload</button>
+              <div class="col-md-6 col-xl-5">
+                <label class="form-label">Cover Image URL</label>
+                <input type="url" class="form-control" id="prImg" placeholder="https://...">
+                <div class="form-text">Shown on cards. Leave blank to use the first gallery image.</div>
+              </div>
+              <div class="col-md-6 col-xl-7">
+                <label class="form-label">Gallery Images (one URL per line)</label>
+                <textarea class="form-control" id="prImages" rows="4" placeholder="https://..."></textarea>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <button class="btn btn-outline-secondary btn-sm" type="button" id="prUploadImages">Upload Images</button>
                 </div>
+                <div class="form-text">Select multiple files in one go. We'll upload them to Cloudinary and append the URLs here.</div>
               </div>
               <div class="form-actions">
                 <button class="btn btn-secondary" id="prNew">New</button>
@@ -967,7 +973,7 @@ async function renderProjects() {
       <div class="col-12">
         <div class="table-responsive">
           <table class="table table-sm align-middle">
-            <thead><tr><th>Title</th><th>Order</th><th>Image</th><th></th></tr></thead>
+            <thead><tr><th>Title</th><th>Order</th><th>Gallery</th><th></th></tr></thead>
             <tbody id="prBody"></tbody>
           </table>
         </div>
@@ -975,26 +981,39 @@ async function renderProjects() {
     </div>`;
 
   const tbody = q('#prBody');
-  tbody.innerHTML = list.map(p => `
+  tbody.innerHTML = list.map(p => {
+    const gallery = Array.isArray(p.images) ? p.images : (p.gallery ? [].concat(p.gallery) : []);
+    const cover = gallery?.[0] || p.image || '';
+    const imageCount = gallery?.length || (p.image ? 1 : 0);
+    return `
     <tr data-id="${p.id}">
       <td>
         <div class="fw-semibold">${safe(p.title)}</div>
         <div class="small text-muted">${safe(p.description)}</div>
       </td>
       <td style="width:80px">${safe(p.order,'')}</td>
-      <td style="width:120px"><img src="${safe(p.image)}" alt="" style="height:60px;object-fit:cover;border-radius:6px"></td>
+      <td style="width:150px">
+        ${cover ? `<img src="${safe(cover)}" alt="" style="height:60px;object-fit:cover;border-radius:6px">` : '<div class="text-muted small">No image</div>'}
+        <div class="small text-muted mt-1">${imageCount} image${imageCount === 1 ? '' : 's'}</div>
+      </td>
       <td class="text-end">
         <button class="icon-btn me-2" data-act="edit"><i class="fa-regular fa-pen-to-square"></i></button>
         <button class="icon-btn text-danger" data-act="del"><i class="fa-regular fa-trash-can"></i></button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   const setForm = (p=null) => {
+    const gallery = Array.isArray(p?.images) ? p.images : (p?.gallery ? [].concat(p.gallery) : []);
+    const uniqueGallery = Array.from(new Set((gallery || []).filter(Boolean)));
+    const cover = p?.image || uniqueGallery[0] || '';
+    if (cover && !uniqueGallery.includes(cover)) uniqueGallery.unshift(cover);
     q('#prId').value = p?.id || '';
     q('#prTitle').value = p?.title || '';
     q('#prOrder').value = p?.order || 0;
     q('#prDesc').value = p?.description || '';
-    q('#prImg').value = p?.image || '';
+    q('#prImg').value = cover || '';
+    q('#prImages').value = uniqueGallery.join('\n');
   };
 
   q('#prNew')?.addEventListener('click', (e) => { e.preventDefault(); setForm(null); });
@@ -1006,8 +1025,27 @@ async function renderProjects() {
     const order = Number(q('#prOrder').value || 0);
     const description = q('#prDesc').value.trim();
     const image = q('#prImg').value.trim();
+    const galleryInput = parseLines(q('#prImages').value);
     if (!title) return alert('Title is required');
-    const payload = { title, order, description, image };
+    const gallery = [];
+    const seenImgs = new Set();
+    const pushImage = (url) => {
+      const clean = (url || '').trim();
+      if (!clean || seenImgs.has(clean)) return;
+      seenImgs.add(clean);
+      gallery.push(clean);
+    };
+    pushImage(image);
+    galleryInput.forEach(pushImage);
+
+    const coverImage = gallery[0] || image;
+    const payload = {
+      title,
+      order,
+      description,
+      image: coverImage || '',
+      images: gallery.length ? gallery : (coverImage ? [coverImage] : [])
+    };
     try {
       setLoading(e.currentTarget, true);
       if (id) {
@@ -1034,20 +1072,52 @@ async function renderProjects() {
     if (btn.dataset.act === 'del') return confirmDelete('projects', id, () => renderProjects());
   });
 
-  q('#prUpload')?.addEventListener('click', async () => {
-    try {
-      const picker = document.createElement('input');
-      picker.type = 'file';
-      picker.accept = 'image/*';
+  const handleImageUpload = async ({ multiple = false }) => {
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'image/*';
+    picker.multiple = multiple;
+    return new Promise((resolve, reject) => {
       picker.onchange = async () => {
-        const file = picker.files?.[0];
-        if (!file) return;
-        const url = await cloudinaryUpload(file);
-        q('#prImg').value = url;
+        try {
+          const files = Array.from(picker.files || []);
+          if (!files.length) {
+            resolve([]);
+            return;
+          }
+          const urls = [];
+          for (const file of files) {
+            const url = await cloudinaryUpload(file);
+            urls.push(url);
+          }
+          resolve(urls);
+        } catch (err) {
+          reject(err);
+        }
       };
       picker.click();
+    });
+  };
+
+  q('#prUploadImages')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    try {
+      setLoading(btn, true);
+      const urls = await handleImageUpload({ multiple: true });
+      if (!urls.length) return;
+      const ta = q('#prImages');
+      const existing = ta.value ? parseLines(ta.value) : [];
+      urls.forEach((url) => {
+        if (!existing.includes(url)) existing.push(url);
+      });
+      ta.value = existing.join('\n');
+      if (!q('#prImg').value) {
+        q('#prImg').value = existing[0] || '';
+      }
     } catch (err) {
       alert('Upload failed: ' + (err?.message || err));
+    } finally {
+      setLoading(btn, false);
     }
   });
 }

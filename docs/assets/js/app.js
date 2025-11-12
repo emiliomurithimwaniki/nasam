@@ -175,6 +175,8 @@ let firestoreDbInstance = null;
 let firebaseConfigCache = null;
 let lazySectionObserver = null;
 let lazySectionMutationObserver = null;
+let galleryItemsCache = [];
+let galleryFiltersBound = false;
 
 function ensureFirebase(config) {
   if (!config) return null;
@@ -379,6 +381,153 @@ function initLazySections() {
   }
 
   observeDomForLazySections();
+}
+
+function getGalleryFilterContainer() {
+  return document.getElementById("galleryFilters");
+}
+
+function getActiveGalleryFilter() {
+  const container = getGalleryFilterContainer();
+  if (!container) return "all";
+  const activeBtn = container.querySelector("[data-filter].active");
+  return activeBtn?.dataset.filter || "all";
+}
+
+function renderGalleryItems(filter = "all") {
+  const grid = document.getElementById("galleryGrid");
+  if (!grid) return;
+
+  const normalizedFilter = filter || "all";
+  const items = normalizedFilter === "all"
+    ? galleryItemsCache
+    : galleryItemsCache.filter((item) => item.type === normalizedFilter);
+
+  if (!items.length) {
+    grid.innerHTML = `
+      <div class="col-12">
+        <div class="text-center text-muted py-5">No gallery items available yet. Check back soon!</div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map((item) => {
+    const typeLabel = item.type === "category" ? "Service Category" : "Project";
+    const photoCount = item.count || 1;
+    const countLabel = `${photoCount} photo${photoCount === 1 ? "" : "s"}`;
+    const linkUrl = item.ctaUrl || (item.type === "project" ? `projects.html#project-${item.sourceId || item.id}` : "index.html#services");
+    const linkText = item.ctaText || "View details";
+    const subtitle = item.subtitle ? `<p class="small text-muted mb-2">${item.subtitle}</p>` : "";
+
+    return `
+      <div class="col-12 col-sm-6 col-lg-4" data-gallery-type="${item.type}">
+        <article class="card h-100 shadow-sm gallery-card">
+          <div class="ratio ratio-4x3 rounded-top overflow-hidden">
+            <img src="${item.image}" alt="${item.alt}" class="w-100 h-100" style="object-fit:cover;">
+          </div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-primary-subtle text-primary text-uppercase small mb-2">${typeLabel}</span>
+            <h3 class="h6 mb-1">${item.title}</h3>
+            ${subtitle}
+            <p class="text-muted small flex-grow-1">${item.description || "Discover more in our portfolio."}</p>
+            <div class="d-flex justify-content-between align-items-center mt-3 small text-muted">
+              <span><i class="fa-regular fa-images me-1"></i>${countLabel}</span>
+              <a class="fw-semibold" href="${linkUrl}">${linkText} <i class="fa-solid fa-arrow-right ms-1"></i></a>
+            </div>
+          </div>
+        </article>
+      </div>`;
+  }).join("");
+}
+
+function setupGalleryFilters() {
+  const container = getGalleryFilterContainer();
+  if (!container || galleryFiltersBound) return;
+
+  container.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-filter]");
+    if (!btn) return;
+    event.preventDefault();
+
+    container.querySelectorAll("[data-filter]").forEach((button) => button.classList.remove("active"));
+    btn.classList.add("active");
+
+    renderGalleryItems(btn.dataset.filter);
+  });
+
+  galleryFiltersBound = true;
+}
+
+function updateGalleryFilterCounts(items) {
+  const container = getGalleryFilterContainer();
+  if (!container) return;
+
+  const counts = items.reduce((acc, item) => {
+    acc.all += 1;
+    acc[item.type] = (acc[item.type] || 0) + 1;
+    return acc;
+  }, { all: 0 });
+
+  container.querySelectorAll("[data-filter]").forEach((button) => {
+    const key = button.dataset.filter || "all";
+    const count = key === "all" ? counts.all : (counts[key] || 0);
+    button.dataset.count = String(count);
+    if (!button.dataset.label) {
+      button.dataset.label = button.textContent.trim();
+    }
+    const label = button.dataset.label;
+    button.textContent = `${label} (${count})`;
+  });
+}
+
+function updateGalleryContent() {
+  const grid = document.getElementById("galleryGrid");
+  if (!grid) return;
+
+  const items = [];
+
+  categoryGalleryStore.forEach((value, id) => {
+    const primaryImage = value.images?.[0];
+    if (!primaryImage) return;
+    items.push({
+      id: `category-${id}`,
+      sourceId: id,
+      type: "category",
+      title: value.title || "Gallery",
+      subtitle: value.subtitle || "",
+      description: value.description || "",
+      image: primaryImage.url,
+      alt: primaryImage.alt || value.title || "Gallery image",
+      count: value.images?.length || 0,
+      ctaUrl: value.ctaUrl || "index.html#services",
+      ctaText: value.ctaText || "Explore service"
+    });
+  });
+
+  projectStore.forEach((value, id) => {
+    const primaryImage = value.images?.[0];
+    if (!primaryImage) return;
+    items.push({
+      id: `project-${id}`,
+      sourceId: id,
+      type: "project",
+      title: value.title || "Project",
+      subtitle: value.subtitle || value.sector || "",
+      description: value.summary || value.description || "",
+      image: primaryImage.url,
+      alt: primaryImage.alt || value.title || "Project image",
+      count: value.images?.length || 0,
+      ctaUrl: value.cta?.url || `projects.html#project-${id}`,
+      ctaText: value.cta?.text || "View project"
+    });
+  });
+
+  galleryItemsCache = items;
+  updateGalleryFilterCounts(items);
+  setupGalleryFilters();
+
+  const activeFilter = getActiveGalleryFilter();
+  renderGalleryItems(activeFilter);
 }
 
 function normalizeCategoryImages(category) {
@@ -640,33 +789,51 @@ function renderHeroCarousel(photos) {
   const carousel = document.getElementById("heroCarousel");
   if (!container || !carousel) return;
 
+  const heroRoot = document.getElementById("hero");
+
   if (!photos || !photos.length) {
-    container.innerHTML = `<div class="hero-photo js-hero parallax" data-bg="assets/img/fallback-hero.jpg"></div>`;
+    const fallbackUrl = "assets/img/fallback-hero.jpg";
+    container.innerHTML = `
+      <div class="hero-media-card">
+        <figure class="hero-slide">
+          <img src="${fallbackUrl}" class="hero-slide-img" alt="Hero image" loading="lazy" decoding="async">
+        </figure>
+      </div>`;
+    const heroSectionFallback = document.querySelector(".hero-reactive-bg");
+    if (heroSectionFallback) {
+      heroSectionFallback.dataset.reactiveBg = fallbackUrl;
+      heroSectionFallback.style.setProperty("--hero-bg", `url('${fallbackUrl}')`);
+    }
+    if (heroRoot) {
+      heroRoot.style.setProperty("--hero-mobile-bg", `url('${fallbackUrl}')`);
+    }
     return;
   }
 
   const indicators = photos
-    .map((_, idx) => `<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="${idx}" class="${idx === 0 ? "active" : ""}" aria-label="Slide ${idx + 1}" aria-current="${idx === 0 ? "true" : "false"}"></button>`)
+    .map((_, idx) => `<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="${idx}" ${idx === 0 ? 'class="active" aria-current="true"' : ""} aria-label="Slide ${idx + 1}"></button>`)
     .join("");
 
   const slides = photos
     .map((photo, idx) => {
-      const indicatorCaption = photo.caption ? `<p class="mb-0 small">${photo.caption}</p>` : "";
-      const indicatorTitle = photo.title ? `<h5 class="mb-1">${photo.title}</h5>` : "";
-      const captionHtml = indicatorCaption || indicatorTitle
-        ? `<div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">${indicatorTitle}${indicatorCaption}</div>`
+      const alt = photo.alt || photo.title || "Hero image";
+      const captionContent = [photo.title, photo.caption].filter(Boolean).join(" · ");
+      const captionHtml = captionContent
+        ? `<figcaption class="hero-slide-caption">${captionContent}</figcaption>`
         : "";
       return `
         <div class="carousel-item ${idx === 0 ? "active" : ""}">
-          <img src="${photo.url}" class="d-block w-100" alt="${photo.alt || photo.title || "Hero image"}" style="object-fit: cover; height: 460px;">
-          ${captionHtml}
+          <figure class="hero-slide">
+            <img src="${photo.url}" class="hero-slide-img" alt="${alt}" loading="lazy" decoding="async">
+            ${captionHtml}
+          </figure>
         </div>`;
     })
     .join("");
 
   carousel.innerHTML = `
     <div class="carousel-indicators">${indicators}</div>
-    <div class="carousel-inner" style="max-height: 460px;">${slides}</div>
+    <div class="carousel-inner">${slides}</div>
     <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
       <span class="visually-hidden">Previous</span>
@@ -681,18 +848,24 @@ function renderHeroCarousel(photos) {
     heroSection.dataset.reactiveBg = photos[0].url;
     heroSection.style.setProperty("--hero-bg", `url('${photos[0].url}')`);
   }
+
+  if (heroRoot && photos[0]?.url) {
+    heroRoot.style.setProperty("--hero-mobile-bg", `url('${photos[0].url}')`);
+  }
 }
 
 function renderCategories(categories) {
   const grid = document.getElementById("categoriesGrid");
   const empty = document.getElementById("categoriesEmpty");
-  if (!grid) return;
 
   categoryGalleryStore.clear();
 
   if (!Array.isArray(categories) || !categories.length) {
-    grid.innerHTML = "";
+    if (grid) {
+      grid.innerHTML = "";
+    }
     if (empty) empty.classList.remove("d-none");
+    updateGalleryContent();
     return;
   }
 
@@ -710,10 +883,15 @@ function renderCategories(categories) {
 
       categoryGalleryStore.set(String(catId), {
         title: category.name || "Gallery",
-        images: normalizedImages
+        subtitle: category.tagline || category.headline || "",
+        description: category.description || category.summary || "",
+        images: normalizedImages,
+        ctaUrl: category.ctaUrl || "index.html#services",
+        ctaText: category.ctaText || "Learn more"
       });
 
       const carouselId = `cat-${catId}`;
+      const galleryLink = "gallery.html";
       const carouselSlides = normalizedImages
         .map((src, idx) => `
           <div class="carousel-item ${idx === 0 ? "active" : ""}">
@@ -722,6 +900,8 @@ function renderCategories(categories) {
             </div>
           </div>`)
         .join("");
+
+      if (!grid) return "";
 
       return `
         <div class="col-12 col-sm-6 col-lg-4">
@@ -733,17 +913,21 @@ function renderCategories(categories) {
               <h5 class="card-title mb-1">${category.name}</h5>
               <p class="card-text text-muted mb-0">${category.description || "Learn more about this solution."}</p>
               <div class="mt-3 d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-primary btn-sm btn-view-gallery" data-gallery-id="${catId}" data-bs-toggle="modal" data-bs-target="#categoryGalleryModal"><i class="fa-regular fa-images me-1"></i>View Gallery</button>
+                <a class="btn btn-outline-primary btn-sm" href="${galleryLink}" data-gallery-id="${catId}"><i class="fa-regular fa-images me-1"></i>View Gallery</a>
                 <a class="btn btn-accent btn-sm" href="#contact">Learn More <i class="fa-solid fa-arrow-right ms-1"></i></a>
               </div>
             </div>
           </div>
         </div>`;
     })
+    .filter(Boolean)
     .join("");
 
-  grid.innerHTML = cards;
+  if (grid) {
+    grid.innerHTML = cards;
+  }
   if (empty) empty.classList.add("d-none");
+  updateGalleryContent();
 }
 
 function renderProjects(projects) {
@@ -789,10 +973,12 @@ function renderProjects(projects) {
       projectStore.set(String(projectId), {
         title: project.title || "Project",
         description,
+        summary: shortDescription,
         images,
         meta,
         highlights,
         subtitle,
+        sector: project.sector || "",
         cta: {
           text: ctaText,
           url: ctaUrl
@@ -829,6 +1015,7 @@ function renderProjects(projects) {
   window.NASAM_PROJECT_STORE = projectStore;
   renderProjectDetailSections();
   initLazySections();
+  updateGalleryContent();
   document.dispatchEvent(new CustomEvent("nasam:projects-rendered", {
     detail: {
       projectIds: Array.from(projectStore.keys())
@@ -1210,7 +1397,15 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCategoryGalleryModal();
   setupProjectDetailsModal();
   initLazySections();
-  bootstrap();
+  bootstrap().catch((error) => {
+    console.error("NASAM bootstrap failed", error);
+    try {
+      applyContent(fallbackData);
+    } catch (contentError) {
+      console.error("Failed to apply fallback content", contentError);
+    }
+    setSkeletonLoading(false, { delay: 250 });
+  });
 });
 
 window.focusProjectFromHash = focusProjectFromHash;
