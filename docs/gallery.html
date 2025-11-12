@@ -116,6 +116,25 @@
       </div>
     </section>
 
+    <section id="galleryDetailSection" class="py-5 border-top d-none" aria-live="polite">
+      <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <span id="galleryDetailBadge" class="badge bg-primary-subtle text-primary text-uppercase small">Gallery</span>
+            <h2 id="galleryDetailTitle" class="h4 mt-2 mb-2 mb-md-0"></h2>
+            <p id="galleryDetailSubtitle" class="text-muted mb-0"></p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" id="galleryDetailClose" class="btn btn-outline-secondary btn-sm">
+              <i class="fa-solid fa-arrow-left me-1"></i>Back to collections
+            </button>
+          </div>
+        </div>
+        <p id="galleryDetailDescription" class="text-muted"></p>
+        <div id="galleryDetailGrid" class="row g-3"></div>
+      </div>
+    </section>
+
     <section class="py-5 bg-light border-top">
       <div class="container">
         <div class="row g-4 align-items-center">
@@ -218,13 +237,96 @@
           <div class="col-md-3">
             <div class="footer-title">Locations</div>
             <ul class="list-unstyled mb-0 footer-links" data-company-locations>
-              <li><i class="fa-solid奋
+              <li><i class="fa-solid fa-location-dot me-2"></i>Samnima House, Nairobi, Kenya</li>
+              <li><i class="fa-solid fa-location-dot me-2"></i>Marua A Building, Opp. Samrat Supermarket, Nyeri</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        
-                
+    <div class="footer-bottom py-3">
+      <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small opacity-85">
+        <div> 2023 <span data-company-field="name">NASAM HI-TECH ELECTRICALS</span>. All rights reserved.</div>
+        <div class="d-flex gap-3">
+          <a href="privacy.html" class="footer-legal">Privacy</a>
+          <a href="terms.html" class="footer-legal">Terms</a>
+          <a href="faq.html" class="footer-legal">FAQs</a>
+          <a href="certifications.html" class="footer-legal">Certifications</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <a class="fab-whatsapp" data-company-whatsapp-link href="https://wa.me/254722319292" target="_blank" aria-label="Chat on WhatsApp">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <button id="backToTop" class="back-to-top" aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <div id="cookieConsent" class="cookie-consent" role="dialog" aria-live="polite" aria-label="Cookie consent">
+    <div class="cookie-inner">
+      <div class="me-3 small">
+        We use cookies and local caching to improve your experience and analyze traffic. By clicking “Accept”, you consent to cookies and caching. See our <a href="privacy.html" class="link-primary text-decoration-underline">Privacy Policy</a>.
+      </div>
+      <div class="d-flex gap-2">
+        <button id="cookieAccept" class="btn btn-accent btn-sm">Accept</button>
+        <button id="cookieDecline" class="btn btn-outline-light btn-sm">Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="categoryGalleryModal" tabindex="-1" aria-labelledby="categoryGalleryTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoryGalleryTitle">Gallery</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="categoryGalleryCarousel" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-indicators d-none"></div>
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <div class="ratio ratio-16x9">
+                  <img src="assets/img/logo-placeholder.svg" class="d-block w-100 h-100" style="object-fit:cover;" alt="Gallery placeholder" loading="lazy" decoding="async">
+                </div>
+              </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#categoryGalleryCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#categoryGalleryCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="imageLightbox" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content bg-transparent border-0">
+        <button type="button" class="btn-close btn-close-white ms-auto me-2 mt-2" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-body p-2 text-center">
+          <img id="lightboxImg" src="" alt="" class="img-fluid rounded shadow" style="max-height:80vh" loading="lazy" decoding="async">
+          <div id="lightboxCaption" class="text-white-50 small mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   <script src="assets/js/site-config.js" defer></script>
   <script type="module" src="assets/js/app.js"></script>
   <script src="assets/js/main.js" defer></script>
+  <script>
+    document.getElementById('footerYear').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

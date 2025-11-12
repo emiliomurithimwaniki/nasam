@@ -694,6 +694,9 @@
     if(heroRoot && src){
       heroRoot.style.setProperty('--hero-mobile-bg', `url('${src}')`);
     }
+    if(window.NASAMHeroBg && src){
+      window.NASAMHeroBg(src);
+    }
   };
 
   // Bootstrap 5 carousel API if available

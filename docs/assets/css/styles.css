@@ -153,11 +153,11 @@ body{
 [data-theme="dark"] .gradient-blue{background:linear-gradient(135deg,#141a24,#1b2330);background-size:auto;animation:none}
 .hero-art{width:100%;height:260px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.08)}
 .hero .badge{background:rgba(255,255,255,.2);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.4)}
-[data-theme="dark"] .hero .badge{background:#ffffff;border-color:#ffffff;color:#000;font-weight:600}
 
 .hero{
   position:relative;
   --hero-mobile-height:340px;
+  background-color:#0b2b60;
 }
 .hero-bg-stage{
   position:absolute;
@@ -224,7 +224,7 @@ body{
   filter:saturate(1.05);
 }
 .hero::after{
-  background:linear-gradient(180deg,rgba(11,37,69,.68) 12%,rgba(11,37,69,.45) 58%,rgba(11,37,69,0) 100%);
+  background:linear-gradient(180deg,rgba(11,37,69,.85) 12%,rgba(11,37,69,.62) 58%,rgba(9,28,58,.95) 100%);
 }
 .hero .container{
   position:relative;
@@ -236,7 +236,13 @@ body{
   display:flex;
   flex-direction:column;
   gap:1.25rem;
-  max-width:600px;
+  max-width:620px;
+  padding:2.1rem 2.35rem;
+  border-radius:28px;
+  background:rgba(11,34,66,.42);
+  box-shadow:0 24px 52px rgba(4,12,28,.32);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
 }
 .hero-copy .badge{
   align-self:flex-start;
@@ -326,10 +332,10 @@ body{
 .text-gradient{background:linear-gradient(90deg,#fff 0%,#fff 40%,rgba(255,255,255,.9) 50%,#fff 60%,var(--accent-2) 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 8s linear infinite}
 
 /* Wave divider under hero */
-.wave-divider{display:block;line-height:0}
-.wave-divider svg{display:block;width:100%;height:auto}
+.wave-divider{display:block;line-height:0;position:relative;z-index:2}
+.wave-divider svg{display:block;width:100%;height:auto;fill:#0d6efd}
 .wave-divider .wave-2 path{opacity:.5}
-[data-theme="dark"] .wave-divider path{fill:#0c1119 !important}
+[data-theme="dark"] .wave-divider path{fill:#10213b !important}
 
 /* Parallax helper */
 .parallax{will-change:background-position}
@@ -486,13 +492,13 @@ h1,h2,h3{letter-spacing:.2px}
     display:none;
   }
   .hero-copy{
-    padding:0;
-    background:transparent;
-    border-radius:0;
-    border:0;
-    box-shadow:none;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    padding:1.75rem 1.9rem;
+    background:rgba(8,24,52,.75);
+    border-radius:26px;
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 26px 52px rgba(5,16,34,.42);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
     gap:1.35rem;
     align-items:center;
     text-align:center;

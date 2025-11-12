@@ -822,74 +822,123 @@ function updateHero(hero, heroPhotos) {
   renderHeroCarousel(Array.isArray(heroPhotos) && heroPhotos.length ? heroPhotos : fallbackData.heroPhotos);
 }
 
-function renderHeroCarousel(photos) {
-  const container = document.getElementById("heroCarouselContainer");
-  const carousel = document.getElementById("heroCarousel");
-  if (!container || !carousel) return;
+const setHeroBackgroundLayer = (() => {
+  const directions = ["swipe-up", "swipe-right", "swipe-down", "swipe-left"];
+  let dirIndex = 0;
 
+  return (url, options = {}) => {
+    const stage = document.getElementById("heroBgStage");
+    if (!stage || !url) return;
+
+    const current = stage.querySelector(".hero-bg-layer-active");
+    if (current && current.dataset.bg === url) {
+      return;
+    }
+
+    const { immediate = false } = options;
+    let direction = null;
+    if (!immediate) {
+      direction = directions[dirIndex % directions.length];
+      dirIndex = (dirIndex + 1) % directions.length;
+    }
+
+    const layer = document.createElement("div");
+    layer.className = "hero-bg-layer hero-bg-layer-active";
+    layer.dataset.bg = url;
+    layer.style.backgroundImage = `url('${url}')`;
+    if (direction) {
+      layer.classList.add(direction);
+    } else {
+      layer.style.opacity = "1";
+      layer.style.transform = "none";
+    }
+
+    stage.appendChild(layer);
+
+    if (current) {
+      current.classList.remove("hero-bg-layer-active");
+      current.classList.add("hero-bg-layer-exit");
+      current.addEventListener("animationend", () => current.remove(), { once: true });
+    }
+  };
+})();
+
+window.NASAMHeroBg = (url, options) => setHeroBackgroundLayer(url, options);
+
+function renderHeroCarousel(photos) {
+  const stage = document.getElementById("heroBgStage");
+  const heroSection = document.querySelector(".hero-reactive-bg");
   const heroRoot = document.getElementById("hero");
 
-  if (!photos || !photos.length) {
-    const fallbackUrl = "assets/img/fallback-hero.jpg";
-    container.innerHTML = `
-      <div class="hero-media-card">
-        <figure class="hero-slide">
-          <img src="${fallbackUrl}" class="hero-slide-img" alt="Hero image" loading="lazy" decoding="async">
-        </figure>
-      </div>`;
-    const heroSectionFallback = document.querySelector(".hero-reactive-bg");
-    if (heroSectionFallback) {
-      heroSectionFallback.dataset.reactiveBg = fallbackUrl;
-      heroSectionFallback.style.setProperty("--hero-bg", `url('${fallbackUrl}')`);
+  const cleanupTimer = () => {
+    if (stage && stage.dataset.heroBgTimer) {
+      window.clearInterval(Number(stage.dataset.heroBgTimer));
+      delete stage.dataset.heroBgTimer;
+    }
+  };
+
+  const normalizePhotos = Array.isArray(photos)
+    ? photos.filter((photo) => photo && photo.url)
+    : [];
+
+  const fallbackUrl = "assets/img/fallback-hero.jpg";
+
+  if (!normalizePhotos.length) {
+    cleanupTimer();
+    if (stage) {
+      stage.innerHTML = "";
+    }
+    const url = fallbackData?.heroPhotos?.[0]?.url || fallbackUrl;
+    if (heroSection) {
+      heroSection.dataset.reactiveBg = url;
+      heroSection.style.setProperty("--hero-bg", `url('${url}')`);
     }
     if (heroRoot) {
-      heroRoot.style.setProperty("--hero-mobile-bg", `url('${fallbackUrl}')`);
+      heroRoot.style.setProperty("--hero-mobile-bg", `url('${url}')`);
     }
+    setHeroBackgroundLayer(url, { immediate: true });
     return;
   }
 
-  const indicators = photos
-    .map((_, idx) => `<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="${idx}" ${idx === 0 ? 'class="active" aria-current="true"' : ""} aria-label="Slide ${idx + 1}"></button>`)
-    .join("");
+  const slides = normalizePhotos.map((photo) => ({
+    url: photo.url,
+    title: photo.title || photo.caption || "",
+    alt: photo.alt || photo.title || "Hero image"
+  }));
 
-  const slides = photos
-    .map((photo, idx) => {
-      const alt = photo.alt || photo.title || "Hero image";
-      const captionContent = [photo.title, photo.caption].filter(Boolean).join(" · ");
-      const captionHtml = captionContent
-        ? `<figcaption class="hero-slide-caption">${captionContent}</figcaption>`
-        : "";
-      return `
-        <div class="carousel-item ${idx === 0 ? "active" : ""}">
-          <figure class="hero-slide">
-            <img src="${photo.url}" class="hero-slide-img" alt="${alt}" loading="lazy" decoding="async">
-            ${captionHtml}
-          </figure>
-        </div>`;
-    })
-    .join("");
-
-  carousel.innerHTML = `
-    <div class="carousel-indicators">${indicators}</div>
-    <div class="carousel-inner">${slides}</div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>`;
-
-  const heroSection = document.querySelector(".hero-reactive-bg");
-  if (heroSection && photos[0]?.url) {
-    heroSection.dataset.reactiveBg = photos[0].url;
-    heroSection.style.setProperty("--hero-bg", `url('${photos[0].url}')`);
+  if (stage) {
+    stage.innerHTML = "";
   }
 
-  if (heroRoot && photos[0]?.url) {
-    heroRoot.style.setProperty("--hero-mobile-bg", `url('${photos[0].url}')`);
+  cleanupTimer();
+
+  const applyImage = (slide, options = {}) => {
+    if (!slide?.url) return;
+    setHeroBackgroundLayer(slide.url, options);
+    if (heroSection) {
+      heroSection.dataset.reactiveBg = slide.url;
+      heroSection.style.setProperty("--hero-bg", `url('${slide.url}')`);
+    }
+    if (heroRoot) {
+      heroRoot.style.setProperty("--hero-mobile-bg", `url('${slide.url}')`);
+    }
+  };
+
+  let currentIndex = 0;
+  applyImage(slides[currentIndex], { immediate: true });
+
+  if (slides.length <= 1 || !stage) {
+    return;
   }
+
+  const rotationMs = 6500;
+  const tick = () => {
+    currentIndex = (currentIndex + 1) % slides.length;
+    applyImage(slides[currentIndex]);
+  };
+
+  const timerId = window.setInterval(tick, rotationMs);
+  stage.dataset.heroBgTimer = String(timerId);
 }
 
 function renderCategories(categories) {
