@@ -42,10 +42,10 @@ const fallbackData = {
     title: "Electrical Engineering",
     accent: "& Solar Power",
     lead: "Safe, reliable, and efficient systems for homes, businesses, and industry. Delivered by certified professionals with strict adherence to IEE standards.",
-    primaryCtaText: "Our Services",
-    primaryCtaUrl: "#services",
-    secondaryCtaText: "Request a Quote",
-    secondaryCtaUrl: "#contact"
+    primaryCtaText: "Contact Us",
+    primaryCtaUrl: "#contact",
+    secondaryCtaText: "Explore Projects",
+    secondaryCtaUrl: "#projects"
   },
   heroPhotos: [
     {
@@ -208,16 +208,32 @@ function renderProjectDetailSections() {
 
   const sectionsHtml = Array.from(projectStore.entries())
     .map(([projectId, data], index) => {
-      const primaryImage = data.images?.[0]?.url || fallbackData.projects[0]?.image || fallbackData.branding.ogImage;
-      const hasGallery = Array.isArray(data.images) && data.images.length > 1;
-      const galleryHtml = hasGallery
-        ? `<div class="d-flex gap-2 flex-wrap mt-3">${data.images
-            .slice(0, 4)
+      const images = Array.isArray(data.images) ? data.images : [];
+      const primaryImage = images[0]?.url || fallbackData.projects[0]?.image || fallbackData.branding.ogImage;
+      const hasGallery = images.length > 1;
+      const carouselId = `project-carousel-${projectId}`;
+      const carouselInner = images.length
+        ? images
             .map((img, idx) => `
-              <a href="${img.url}" target="_blank" rel="noopener" class="thumbnail-link" aria-label="Open project image ${idx + 1}">
-                <img src="${img.url}" alt="${img.alt || data.title}" class="project-thumb">
-              </a>`)
-            .join("")}${data.images.length > 4 ? `<span class="badge text-bg-primary align-self-center">+${data.images.length - 4} more</span>` : ""}</div>`
+              <div class="carousel-item${idx === 0 ? " active" : ""}">
+                <div class="ratio ratio-16x9">
+                  <img src="${img.url}" alt="${img.alt || data.title}" class="w-100 h-100" style="object-fit:cover;">
+                </div>
+                ${img.caption ? `<div class="carousel-caption bg-dark bg-opacity-50 rounded-3 py-2 px-3 shadow-sm">${img.caption}</div>` : ""}
+              </div>`)
+            .join("")
+        : `
+              <div class="carousel-item active">
+                <div class="ratio ratio-16x9">
+                  <img src="${primaryImage}" alt="${data.title}" class="w-100 h-100" style="object-fit:cover;">
+                </div>
+              </div>`;
+
+      const indicatorsHtml = hasGallery
+        ? images
+            .map((_, idx) => `
+                <button type="button" data-bs-target="#${carouselId}" data-bs-slide-to="${idx}" ${idx === 0 ? "class=\"active\" aria-current=\"true\"" : ""} aria-label="Slide ${idx + 1}"></button>`)
+            .join("")
         : "";
 
       const metaHtml = Array.isArray(data.meta) && data.meta.length
@@ -253,25 +269,45 @@ function renderProjectDetailSections() {
       const ctaHtml = data.cta?.text
         ? `<a class="btn btn-accent" href="${data.cta.url || '#contact'}">${data.cta.text} <i class="fa-solid fa-arrow-right ms-1"></i></a>`
         : "";
+      const galleryButton = `<a class="btn btn-outline-primary" href="gallery.html#project-${projectId}" data-project-gallery="${projectId}"><i class="fa-regular fa-images me-1"></i>View gallery</a>`;
+      const actionsHtml = [galleryButton, ctaHtml]
+        .filter(Boolean)
+        .join("");
+      const actionsBlock = actionsHtml
+        ? `<div class="mt-4 d-flex flex-wrap gap-2">${actionsHtml}</div>`
+        : "";
 
       return `
         <article class="project-detail-section py-5 border-top" id="project-${projectId}" data-project-order="${index + 1}" tabindex="-1">
           <div class="container">
-            <div class="row g-5 align-items-center">
-              <div class="col-lg-6">
-                <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
-                  <img src="${primaryImage}" alt="${data.title}" class="w-100 h-100" style="object-fit:cover;">
+            <div class="card shadow-sm border-0 overflow-hidden">
+              <div class="row g-0 align-items-stretch">
+                <div class="col-lg-6">
+                  <div class="project-carousel h-100 position-relative">
+                    <div id="${carouselId}" class="carousel slide h-100" data-bs-ride="${hasGallery ? "carousel" : "false"}" data-bs-interval="${hasGallery ? 5000 : "false"}" data-bs-touch="true">
+                      ${hasGallery ? `<div class="carousel-indicators">${indicatorsHtml}</div>` : ""}
+                      <div class="carousel-inner h-100">${carouselInner}</div>
+                      ${hasGallery ? `
+                        <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev" aria-label="Previous slide">
+                          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next" aria-label="Next slide">
+                          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>` : ""}
+                    </div>
+                  </div>
                 </div>
-                ${galleryHtml}
-              </div>
-              <div class="col-lg-6">
-                <span class="badge text-bg-primary-soft mb-2">Project ${index + 1}</span>
-                <h2 class="h3 fw-semibold mb-2">${data.title}</h2>
-                ${subtitleHtml}
-                <p class="text-muted">${data.description || "Project details coming soon."}</p>
-                ${metaHtml}
-                ${highlightsHtml}
-                ${ctaHtml ? `<div class="mt-4">${ctaHtml}</div>` : ""}
+                <div class="col-lg-6 d-flex">
+                  <div class="card-body d-flex flex-column p-4 p-lg-5">
+                    <span class="badge text-bg-primary-soft align-self-start mb-2">Project ${index + 1}</span>
+                    <h2 class="h3 fw-semibold mb-2">${data.title}</h2>
+                    ${subtitleHtml}
+                    <p class="text-muted">${data.description || "Project details coming soon."}</p>
+                    ${metaHtml}
+                    ${highlightsHtml}
+                    ${actionsBlock}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -734,7 +770,9 @@ function updateCompany(company) {
 
   if (company.email) {
     document.querySelectorAll("[data-company-email-link]").forEach((el) => {
-      setHref(el, `mailto:${company.email}`);
+      const subject = el.getAttribute("data-email-subject");
+      const query = subject ? `?subject=${encodeURIComponent(subject)}` : "";
+      setHref(el, `mailto:${company.email}${query}`);
       if (el.hasAttribute("data-company-email")) {
         textContent(el, company.email);
       }

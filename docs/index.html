@@ -160,21 +160,18 @@
 
   <main id="main" tabindex="-1" class="data-skeleton-target">
     <section id="hero" class="hero gradient-blue text-white py-5" style="--hero-mobile-bg: url('https://res.cloudinary.com/demo/image/upload/v1690000000/solar-panels.jpg');">
+      <div class="hero-bg-stage" id="heroBgStage" aria-hidden="true"></div>
       <div class="container py-4">
         <div class="row align-items-center g-4">
           <div class="col-lg-7 reveal reveal-left hero-reactive-bg text-center text-lg-start" data-reactive-bg="https://res.cloudinary.com/demo/image/upload/v1690000000/solar-panels.jpg">
-            <span class="badge rounded-pill text-bg-light text-dark mb-3" id="heroBadge">Quality • Innovation • Customer Satisfaction</span>
-            <h1 class="display-5 fw-bold" id="heroTitle">Electrical Engineering <span class="text-gradient" id="heroAccent">&amp; Solar Power</span></h1>
-            <p class="lead mt-3" id="heroLead">Safe, reliable, and efficient systems for homes, businesses, and industry. Delivered by certified professionals with strict adherence to IEE standards.</p>
-            <div class="d-flex flex-wrap gap-2 align-items-center hero-actions">
-              <a class="btn btn-accent" id="heroPrimaryCta" href="#contact"><i class="fa-solid fa-paper-plane me-1"></i>Contact Us</a>
-              <a class="btn btn-outline-light" id="heroSecondaryCta" href="#projects"><i class="fa-solid fa-diagram-project me-1"></i>Explore Projects</a>
-              <a class="btn btn-whatsapp btn-sm" data-company-whatsapp-link href="https://wa.me/254722319292" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
-                <i class="fa-brands fa-whatsapp me-1"></i>WhatsApp
-              </a>
-              <a class="btn btn-outline-light btn-sm" data-company-phone-link href="tel:+254722319292" aria-label="Call us">
-                <i class="fa-solid fa-phone me-1"></i>Call
-              </a>
+            <div class="hero-copy">
+              <span class="badge rounded-pill text-bg-light text-dark mb-3" id="heroBadge">Quality • Innovation • Customer Satisfaction</span>
+              <h1 class="display-5 fw-bold" id="heroTitle">Electrical Engineering <span class="text-gradient" id="heroAccent">&amp; Solar Power</span></h1>
+              <p class="lead mt-3" id="heroLead">Safe, reliable, and efficient systems for homes, businesses, and industry. Delivered by certified professionals with strict adherence to IEE standards.</p>
+              <div class="d-flex flex-wrap gap-2 align-items-center hero-actions">
+                <a class="btn btn-accent" id="heroPrimaryCta" href="#contact"><i class="fa-solid fa-paper-plane me-1"></i>Contact Us</a>
+                <a class="btn btn-outline-light" id="heroSecondaryCta" href="#projects"><i class="fa-solid fa-diagram-project me-1"></i>Explore Projects</a>
+              </div>
             </div>
           </div>
           <div class="col-lg-5 text-center reveal reveal-right">
@@ -468,8 +465,8 @@
             <h2 class="display-6 fw-semibold mt-3">Let's build the next power solution together</h2>
             <p class="lead opacity-85 mt-3">Share your project goals and our engineers will prepare a tailored roadmap within two business days.</p>
             <div class="d-flex flex-wrap gap-3 mt-4">
-              <a class="btn btn-light btn-lg px-4" href="#contact" id="ctaConsultation"><i class="fa-solid fa-calendar-check me-2"></i>Book a consultation</a>
-              <a class="btn btn-outline-light btn-lg px-4" data-company-email-link href="mailto:info@nasam.co.ke"><i class="fa-solid fa-envelope-open-text me-2"></i>Email info@nasam.co.ke</a>
+              <a class="btn btn-light btn-lg px-4" href="#contactForm" id="ctaConsultation"><i class="fa-solid fa-calendar-check me-2"></i>Book a consultation</a>
+              <a class="btn btn-outline-light btn-lg px-4" data-company-email-link data-email-subject="Consultation Request" href="mailto:info@nasam.co.ke"><i class="fa-solid fa-envelope-open-text me-2"></i>Email info@nasam.co.ke</a>
             </div>
           </div>
           <div class="col-lg-4">

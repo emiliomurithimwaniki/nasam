@@ -684,11 +684,15 @@
   if(!carouselEl) return;
 
   const reactive = document.querySelector('.hero-reactive-bg');
+  const heroRoot = document.getElementById('hero');
   const setReactiveBg = ()=>{
     const active = carouselEl.querySelector('.carousel-item.active img');
     const src = active ? active.getAttribute('src') : null;
     if(reactive && src){
       reactive.style.setProperty('--hero-bg', `url('${src}')`);
+    }
+    if(heroRoot && src){
+      heroRoot.style.setProperty('--hero-mobile-bg', `url('${src}')`);
     }
   };
 
